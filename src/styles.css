@@ -1,0 +1,26 @@
+/* M2 only: centre the plain-text reading. Real styling — translucency, the
+   wheel, colour bands — arrives at M4 and M5. */
+:root {
+  font-family: -apple-system, Helvetica, Arial, sans-serif;
+  color: #0f0f0f;
+  background-color: #f6f6f6;
+}
+
+body {
+  margin: 0;
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#reading {
+  font-size: 2rem;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    color: #f6f6f6;
+    background-color: #2f2f2f;
+  }
+}

@@ -1,9 +1,15 @@
 name: checks
 
-# One job for now. At M1 there is only the producer — a dependency-free Python
-# script — so there is nothing to install and nothing that can flake. Split
-# this the way the other repos split theirs (a `checks` job that is static,
-# a `tests`/build job that is not) once the Rust side of the app exists.
+# Two jobs, deliberately kept apart.
+#
+# `producer` needs nothing beyond Python and Rust's own toolchain — it is the
+# statusLine binary in isolation, and it either passes or something is
+# genuinely wrong.
+#
+# `app` builds the Tauri side, which means system webview and GTK
+# dependencies on Linux runners. That is the less predictable half, so it is
+# isolated — if a platform dependency ever breaks, the failure is visibly its
+# own and `producer` still reports honestly.
 
 on:
   push:
@@ -12,7 +18,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  checks:
+  producer:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -25,10 +31,7 @@ jobs:
       - name: No credentials in the repository
         run: ./scripts/check-secrets.sh
 
-      - name: Producer parses
-        run: python -m py_compile scripts/statusline-prototype.py
-
-      - name: Producer tests
+      - name: Producer tests (Python prototype)
         run: make test
 
       - name: Fixtures are what they claim to be
@@ -45,3 +48,41 @@ jobs:
               echo "  ok  $f"
             fi
           done
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Rust producer builds
+        run: cargo build --manifest-path statusline/Cargo.toml
+
+      - name: Rust producer matches the prototype against every fixture
+        run: |
+          BIN=statusline/target/debug/simplebar-statusline
+          for f in tests/fixtures/*.json; do
+            py_out=$(python3 scripts/statusline-prototype.py < "$f" 2>/dev/null || true)
+            rs_out=$("$BIN" < "$f" 2>/dev/null || true)
+            [ "$py_out" = "$rs_out" ] || {
+              echo "  FAIL $f: python=[$py_out] rust=[$rs_out]"
+              exit 1
+            }
+            echo "  ok  $f"
+          done
+
+  app:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Tauri app builds
+        run: cargo build --manifest-path src-tauri/Cargo.toml
