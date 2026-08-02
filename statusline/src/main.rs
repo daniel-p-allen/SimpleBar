@@ -30,6 +30,7 @@ struct Usage {
     used_percentage: f64,
     resets_at: i64,
     written_at: i64,
+    model_name: Option<String>,
 }
 
 /// `$XDG_STATE_HOME`, defaulting to `~/.local/state`.
@@ -75,6 +76,16 @@ fn main() {
 
     let remaining = 100.0 - used;
 
+    // Purely cosmetic — a small label under the reset time in the app. Never
+    // blocks the required fields above; absent or malformed model info just
+    // means no label.
+    let model_name = blob
+        .get("model")
+        .and_then(Value::as_object)
+        .and_then(|m| m.get("display_name"))
+        .and_then(Value::as_str)
+        .map(String::from);
+
     // 12-hour with am/pm — "1:00 am", not "01:00". No leading zero on the
     // hour ("%-I" drops the pad).
     let resets_str = Local
@@ -90,7 +101,7 @@ fn main() {
             .map(|d| d.as_secs() as i64)
             .unwrap_or(0);
 
-        let usage = Usage { used_percentage: used, resets_at, written_at };
+        let usage = Usage { used_percentage: used, resets_at, written_at, model_name };
 
         // Atomic write — temp file plus rename — so a reader never sees a
         // half-written file. Never let a write failure take out the status

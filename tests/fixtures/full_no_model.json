@@ -1,0 +1,6 @@
+{
+  "session_id": "test",
+  "rate_limits": {
+    "five_hour": { "used_percentage": 65, "resets_at": 1785682800 }
+  }
+}

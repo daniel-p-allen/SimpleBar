@@ -66,6 +66,21 @@ def test_full_blob():
         check("full blob: writes resets_at", data["resets_at"] == 1785682800)
         check("full blob: stamps written_at", isinstance(data["written_at"], int))
         check("full blob: ignores seven_day", "seven_day" not in data)
+        check("full blob: writes model_name", data["model_name"] == "Opus 5")
+
+
+def test_model_name_is_optional():
+    """model is cosmetic — its absence must not affect the required fields."""
+    with tempfile.TemporaryDirectory() as tmp:
+        out, err, code = run(fixture("full_no_model.json"), tmp)
+        check("no model: exits 0", code == 0, f"(got {code})")
+        check("no model: still reports remaining", "35%" in out, f"(got {out!r})")
+
+        with open(usage_path(tmp)) as fh:
+            data = json.load(fh)
+        check("no model: used_percentage still written", data["used_percentage"] == 65)
+        check("no model: model_name key present", "model_name" in data)
+        check("no model: model_name is null, not absent", data.get("model_name") is None)
 
 
 def test_quiet_on_bad_input():
@@ -115,6 +130,7 @@ def test_no_temp_file_left_behind():
 def main():
     for test in (
         test_full_blob,
+        test_model_name_is_optional,
         test_quiet_on_bad_input,
         test_bad_input_preserves_last_good_reading,
         test_no_temp_file_left_behind,

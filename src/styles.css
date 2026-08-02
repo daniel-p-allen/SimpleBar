@@ -10,12 +10,20 @@ body {
   margin: 0;
   height: 100vh;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
+  text-align: center;
 }
 
 #reading {
-  font-size: 2rem;
+  font-size: 1.6rem;
+}
+
+#model {
+  font-size: 1.3rem;
+  opacity: 0.6;
+  margin-top: 0.25rem;
 }
 
 @media (prefers-color-scheme: dark) {

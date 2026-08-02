@@ -15,6 +15,10 @@ struct Usage {
     used_percentage: f64,
     resets_at: i64,
     written_at: i64,
+    // #[serde(default)]: a usage.json written before this field existed
+    // (by an older producer binary) must still parse, not fail closed.
+    #[serde(default)]
+    model_name: Option<String>,
 }
 
 /// `$XDG_STATE_HOME`, defaulting to `~/.local/state`.

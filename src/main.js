@@ -3,7 +3,8 @@ const { invoke } = window.__TAURI__.core;
 // M2: read once at startup, show it as plain text. No file watching (M3),
 // no wheel (M4) — this exists only to prove the number reaches the window.
 window.addEventListener("DOMContentLoaded", async () => {
-  const el = document.querySelector("#reading");
+  const readingEl = document.querySelector("#reading");
+  const modelEl = document.querySelector("#model");
   try {
     const usage = await invoke("read_usage");
     const remaining = 100 - usage.used_percentage;
@@ -11,8 +12,10 @@ window.addEventListener("DOMContentLoaded", async () => {
       hour: "numeric",
       minute: "2-digit",
     });
-    el.textContent = `${remaining}% left · resets ${resets}`;
+    readingEl.textContent = `${remaining}% - Resets @ ${resets}`;
+    // Purely cosmetic — omit the line entirely rather than show it blank.
+    modelEl.textContent = usage.model_name ?? "";
   } catch (err) {
-    el.textContent = "no data yet";
+    readingEl.textContent = "no data yet";
   }
 });

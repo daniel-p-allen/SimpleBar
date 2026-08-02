@@ -18,7 +18,9 @@ window whose whole job is to display one live number.
 - Wheel starts full, drains clockwise as the session is consumed.
 - Amber under 20% remaining, red under 10%, one beep per threshold crossing.
 - Centre shows the reset time on a 12-hour clock, lower case, no leading zero
-  on the hour: "resets 1:00 am", "resets 10:00 pm".
+  on the hour: "resets 1:00 am", "resets 10:00 pm". Below it, in a smaller
+  font, the model name active when the reading was taken (e.g. "Opus 5") —
+  omitted entirely when absent, rather than showing a blank line.
 
 ## Where the number comes from
 
@@ -32,7 +34,9 @@ in `~/.claude/settings.json`, on every status line render. That blob carries:
 }
 ```
 
-SimpleBar uses `five_hour` only.
+SimpleBar uses `five_hour` only. Separately, the blob also carries a top-level
+`"model": { "display_name": "Opus 5" }` — used only for the small label under
+the reset time, not for any usage calculation.
 
 These are **account-wide** figures — the same allowance drawn down by
 claude.ai in the browser and the mobile apps — so the number is correct even
@@ -83,10 +87,10 @@ share these files and the producer is the half that runs in a terminal — so XD
 wins, and a Linux port comes free.
 
 **`simplebar-statusline`** — a small Rust binary registered as the statusLine
-command. Reads the JSON blob on stdin, extracts `five_hour`, writes
-`usage.json` atomically (temp file + rename, so the reader never sees a
-half-written file), prints an empty status line. Rust rather than shell+`jq`
-so there is no runtime dependency to install.
+command. Reads the JSON blob on stdin, extracts `five_hour` and (if present)
+`model.display_name`, writes `usage.json` atomically (temp file + rename, so
+the reader never sees a half-written file), prints the status line text. Rust
+rather than shell+`jq` so there is no runtime dependency to install.
 
 **SimpleBar** — a Tauri app. Rust side owns the window and watches `usage.json`
 with the `notify` crate, emitting an event to the webview on change. The
@@ -98,9 +102,14 @@ webview draws the wheel as an SVG and owns the alert logic.
 {
   "used_percentage": 62.5,
   "resets_at": 1754150400,
-  "written_at": 1754140812
+  "written_at": 1754140812,
+  "model_name": "Opus 5"
 }
 ```
+
+`model_name` is nullable — written as `null` when the blob had no `model`
+field, never omitted, so readers don't have to distinguish "absent key" from
+"no model".
 
 `written_at` is ours, not Claude Code's — it is what lets the UI say how old
 the reading is.
@@ -239,6 +248,19 @@ Each ships and is verifiable on its own.
 
 Stage 2 (a sync or server so the number refreshes without Claude Code running)
 and stage 3 (mobile) are deliberately out of scope and not designed here.
+
+## Ideas parked for later
+
+Not designed, not committed to — captured so they aren't lost, to be properly
+designed if and when picked up.
+
+- **A model-switch nudge.** At some usage threshold (40% suggested), surface a
+  prompt in the foreground: usage is climbing, switch to a cheaper model to
+  make the session stretch further? Would need a defined workflow for actually
+  switching — `claude`'s model selection is presently a manual `/model` or
+  `--model` action, so this would mean either shelling out to change the
+  session default or walking the user through it. Overlaps with the beep/alert
+  machinery from M6 but is a distinct feature, not a rename of it.
 
 ## Repo conventions
 

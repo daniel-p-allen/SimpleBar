@@ -68,6 +68,14 @@ def main() -> None:
     # 12-hour with am/pm — "1:00 am", not "01:00". No leading zero on the hour.
     resets = time.strftime("%-I:%M %p", time.localtime(resets_at)).lower()
 
+    # Purely cosmetic — a small label under the reset time in the app. Never
+    # blocks the required fields above; absent or malformed model info just
+    # means no label.
+    model = blob.get("model")
+    model_name = model.get("display_name") if isinstance(model, dict) else None
+    if not isinstance(model_name, str):
+        model_name = None
+
     # Atomic write — temp file plus rename — so a reader never sees a
     # half-written file.
     try:
@@ -79,6 +87,7 @@ def main() -> None:
                     "used_percentage": used,
                     "resets_at": resets_at,
                     "written_at": int(time.time()),
+                    "model_name": model_name,
                 },
                 fh,
             )
