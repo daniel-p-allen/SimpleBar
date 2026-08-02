@@ -1,0 +1,47 @@
+name: checks
+
+# One job for now. At M1 there is only the producer — a dependency-free Python
+# script — so there is nothing to install and nothing that can flake. Split
+# this the way the other repos split theirs (a `checks` job that is static,
+# a `tests`/build job that is not) once the Rust side of the app exists.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: No credentials in the repository
+        run: ./scripts/check-secrets.sh
+
+      - name: Producer parses
+        run: python -m py_compile scripts/statusline-prototype.py
+
+      - name: Producer tests
+        run: make test
+
+      - name: Fixtures are what they claim to be
+        run: |
+          # malformed.json is deliberately broken — it must stay broken, or the
+          # test it feeds stops testing anything. Every other fixture must parse.
+          for f in tests/fixtures/*.json; do
+            if [ "$(basename "$f")" = "malformed.json" ]; then
+              python -c "import json,sys; json.load(open(sys.argv[1]))" "$f" 2>/dev/null \
+                && { echo "  FAIL $f is valid JSON but should be malformed"; exit 1; }
+              echo "  ok  $f (malformed, as intended)"
+            else
+              python -c "import json,sys; json.load(open(sys.argv[1]))" "$f"
+              echo "  ok  $f"
+            fi
+          done

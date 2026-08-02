@@ -1,0 +1,23 @@
+# Rust / Tauri
+target/
+src-tauri/target/
+
+# Node (Tauri's webview tooling, from M2)
+node_modules/
+dist/
+
+# Python (the M1 prototype)
+__pycache__/
+.venv/
+
+# macOS
+.DS_Store
+
+# Runtime artefacts. usage.json is state, not source — it belongs in
+# $XDG_STATE_HOME, never in the repo, and it names your account's usage.
+usage.json
+*.tmp
+
+# Never commit a copy of anyone's Claude Code settings.
+settings.json
+settings.local.json
