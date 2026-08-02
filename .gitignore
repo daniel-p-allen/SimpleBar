@@ -21,3 +21,6 @@ usage.json
 # Never commit a copy of anyone's Claude Code settings.
 settings.json
 settings.local.json
+
+# Cargo build output
+statusline/target/
