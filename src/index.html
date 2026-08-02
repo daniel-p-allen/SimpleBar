@@ -10,12 +10,31 @@
 
   <body>
     <!--
-      Plain text on purpose — this is the M2 checkpoint, proving the number
-      the producer wrote reaches the window. The wheel is M4.
+      M4: the wheel. Static read from M2 still — this window only reflects
+      whatever the reading was when it opened, until M3 wires up the file
+      watch and this stops being a snapshot.
     -->
-    <main>
-      <div id="reading">Loading…</div>
-      <div id="model"></div>
-    </main>
+    <div id="wheel-container">
+      <svg id="wheel" viewBox="0 0 200 200">
+        <!-- Backdrop: a solid disc behind the centre text, independent of
+             the transparent window — without it the text sits directly on
+             the desktop showing through. Gap to the track's inner edge
+             (64) matches the tread-to-track gap (5 units), so the layering
+             reads consistently. -->
+        <circle class="backdrop" cx="100" cy="100" r="59" />
+        <!-- Tread: a static ring of thick dashes, standing in for a knobby
+             tyre outline until a proper piece of art replaces it. -->
+        <circle class="tread" cx="100" cy="100" r="92" />
+        <!-- Track: the drained portion, always visible underneath. -->
+        <circle class="track" cx="100" cy="100" r="72" />
+        <!-- Progress: the remaining portion. Drains clockwise from 12
+             o'clock as stroke-dashoffset grows — see main.js. -->
+        <circle id="progress" cx="100" cy="100" r="72" />
+      </svg>
+      <div id="center-text">
+        <div id="reading">Loading…</div>
+        <div id="model"></div>
+      </div>
+    </div>
   </body>
 </html>

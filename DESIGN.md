@@ -16,7 +16,8 @@ window whose whole job is to display one live number.
 - On screen, coverable by other windows, alt-tabbable. Not always-on-top.
 - Adjustable translucency (20/40/60/80/100%) from a right-click menu.
 - Wheel starts full, drains clockwise as the session is consumed.
-- Amber under 20% remaining, red under 10%, one beep per threshold crossing.
+- Amber at 20% remaining or below, red at 10% or below (inclusive — exactly
+  10% is red, not amber), one beep per threshold crossing.
 - Centre shows the reset time on a 12-hour clock, lower case, no leading zero
   on the hour: "resets 1:00 am", "resets 10:00 pm". Below it, in a smaller
   font, the model name active when the reading was taken (e.g. "Opus 5") —

@@ -8,13 +8,15 @@
   },
   "app": {
     "withGlobalTauri": true,
+    "macOSPrivateApi": true,
     "windows": [
       {
         "title": "SimpleBar",
         "width": 800,
         "height": 800,
         "resizable": false,
-        "alwaysOnTop": false
+        "alwaysOnTop": false,
+        "transparent": true
       }
     ],
     "security": {

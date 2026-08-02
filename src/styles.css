@@ -1,14 +1,79 @@
-/* M2 only: centre the plain-text reading. Real styling — translucency, the
-   wheel, colour bands — arrives at M4 and M5. */
 :root {
   font-family: -apple-system, Helvetica, Arial, sans-serif;
   color: #0f0f0f;
-  background-color: #f6f6f6;
+  /* The native window is transparent (tauri.conf.json) — this alpha is what
+     actually makes the window 95% see-through. Text stays fully opaque via
+     `color` above; only the backdrop fades. */
+  background-color: rgba(246, 246, 246, 0.05);
 }
 
 body {
   margin: 0;
   height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#wheel-container {
+  position: relative;
+  width: 640px;
+  height: 640px;
+}
+
+#wheel {
+  width: 100%;
+  height: 100%;
+}
+
+/* Backdrop: solid disc behind the centre text, high opacity — deliberately
+   not the ~5% window alpha, so text stays legible regardless of what's on
+   the desktop behind the window. Light-mode tone here; dark mode overrides
+   below to stay readable against the light-mode (#0f0f0f) text colour. */
+.backdrop {
+  fill: rgba(217, 217, 217, 0.85);
+}
+
+/* Tread: a placeholder ring of thick dashes standing in for a knobby tyre
+   outline — see DESIGN.md, a real one is coming. */
+.tread {
+  fill: none;
+  stroke: #2b2b2b;
+  stroke-width: 14;
+  stroke-dasharray: 10 7;
+}
+
+/* Track: the drained portion, always visible underneath the progress arc.
+   Mid-grey, not near-white — the window is 95% transparent, so a light
+   stroke fails WCAG 1.4.11 (3:1 non-text contrast) against a light desktop
+   showing through behind it. */
+.track {
+  fill: none;
+  stroke: #9a9a9a;
+  stroke-width: 16;
+}
+
+/* Progress: the remaining portion. Starts at 12 o'clock and drains
+   clockwise as stroke-dashoffset grows — see main.js. ~400ms per
+   DESIGN.md's animation target. */
+#progress {
+  fill: none;
+  stroke-width: 16;
+  stroke-linecap: round;
+  /* rotate(-90deg) alone only moves the start point to 12 o'clock — it
+     doesn't change which way the arc is traced, so the drain ran
+     counter-clockwise. scaleX(-1) mirrors the circle first, which flips
+     the traversal direction; the rotate then puts the (now-flipped)
+     start back at 12 o'clock. Order matters: scaleX applies first. */
+  transform: rotate(90deg) scaleX(-1);
+  transform-origin: 100px 100px;
+  transition: stroke-dashoffset 400ms ease, stroke 400ms ease;
+  stroke: #2e9e4f; /* normal band */
+}
+
+#center-text {
+  position: absolute;
+  inset: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -26,9 +91,53 @@ body {
   margin-top: 0.25rem;
 }
 
+/* Colour bands. Colour is never the only signal (WCAG 1.4.1) — #reading
+   also gains weight so the low/critical states read without relying on
+   colour perception, without adding text that wasn't asked for. */
+#wheel-container[data-band="low"] #progress {
+  stroke: #d98c1f;
+}
+#wheel-container[data-band="low"] #reading {
+  font-weight: 700;
+}
+
+#wheel-container[data-band="critical"] #progress {
+  stroke: #c93b3b;
+}
+#wheel-container[data-band="critical"] #reading {
+  font-weight: 700;
+}
+
+#wheel-container[data-band="no-data"] .tread,
+#wheel-container[data-band="no-data"] .track {
+  stroke: #cccccc;
+}
+#wheel-container[data-band="no-data"] #progress {
+  stroke-dasharray: none;
+  stroke-dashoffset: 0;
+  stroke: none;
+}
+
 @media (prefers-color-scheme: dark) {
   :root {
     color: #f6f6f6;
-    background-color: #2f2f2f;
+    background-color: rgba(47, 47, 47, 0.05);
+  }
+
+  .backdrop {
+    fill: rgba(80, 80, 80, 0.85);
+  }
+
+  .tread {
+    stroke: #cfcfcf;
+  }
+
+  .track {
+    stroke: #4a4a4a;
+  }
+
+  #wheel-container[data-band="no-data"] .tread,
+  #wheel-container[data-band="no-data"] .track {
+    stroke: #5a5a5a;
   }
 }
