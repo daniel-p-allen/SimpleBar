@@ -5,7 +5,8 @@ design decision — if the code and the doc disagree, update the doc first, then
 fix the code. No silent drift.
 
 M1–M4 are done: the producer, the window, the file watch and the wheel all
-work. M5 (translucency menu) is the next piece of code.
+work. M5 (adjustable translucency) was dropped by decision — see "Decisions
+changed" in `DESIGN.md`. M6 (alerts) is the next piece of code.
 
 ## What this is
 

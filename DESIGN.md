@@ -21,7 +21,9 @@ whole job is to display one live number. It opens at 800×800.
   readable, and a HUD that can be dragged down to an illegible smudge is a
   worse default than one that refuses.
 - On screen, coverable by other windows, alt-tabbable. Not always-on-top.
-- Adjustable translucency (20/40/60/80/100%) from a right-click menu.
+- Fixed translucency: the window background is ~95% see-through, set in the
+  stylesheet. Not adjustable — see "Adjustable translucency" under decisions
+  changed.
 - Wheel starts full, drains clockwise as the session is consumed.
 - Amber at 20% remaining or below, red at 10% or below (inclusive — exactly
   10% is red, not amber), one beep per threshold crossing.
@@ -106,7 +108,7 @@ Per the XDG Base Directory Specification, not a dotfolder in `$HOME`:
 | What | Where |
 |---|---|
 | The reading | `$XDG_STATE_HOME/simplebar/usage.json`, default `~/.local/state/simplebar/` |
-| Preferences (translucency, mute) | `$XDG_CONFIG_HOME/simplebar/config.json`, default `~/.config/simplebar/` |
+| Preferences (mute) | `$XDG_CONFIG_HOME/simplebar/config.json`, default `~/.config/simplebar/` |
 | Installed producer binary | `~/.local/bin/simplebar-statusline` |
 | Setup record | `$XDG_STATE_HOME/simplebar/install.json` |
 
@@ -281,13 +283,31 @@ Each ships and is verifiable on its own.
 | M2 | Tauri window reading `usage.json` once at startup, as plain text | Numbers appear on screen — **integration checkpoint: end-to-end wiring proven** |
 | M3 | File watching | Editing `usage.json` updates the window live |
 | M4 | The wheel — SVG, drains clockwise, colour bands | Looks right at 100/50/19/9% — **integration checkpoint: visual complete** |
-| M5 | Right-click menu — translucency 20/40/60/80/100 | Setting survives a restart |
+| ~~M5~~ | ~~Right-click menu — translucency 20/40/60/80/100~~ | **Dropped, 2026-08-03 — see "Adjustable translucency" below.** Numbering left alone so M6–M8 keep the numbers they were built and discussed under |
 | M6 | Alerts — beep on crossing, mute toggle | Fires once per crossing, not per update |
 | M7 | No-data and stale states | Grey wheel reading "no data yet" before the first write |
 | M8 | Packaging — `.app` bundle, README, statusLine wiring instructions | Installs on a clean account — **integration checkpoint: real use** |
 
 Stage 2 (a sync or server so the number refreshes without Claude Code running)
 and stage 3 (mobile) are deliberately out of scope and not designed here.
+
+## Decisions changed
+
+Recorded rather than edited away, so the reasoning behind a reversal is
+visible to whoever reads this next.
+
+- **Adjustable translucency — dropped, 2026-08-03.** Originally M5: a
+  right-click menu offering 20/40/60/80/100%, with the choice persisted to
+  `config.json`. Dropped on review: the fixed ~95%-transparent background
+  already reads well against any desktop, so the feature bought a preferences
+  file, a menu, and a persistence path for a setting nobody had wanted to
+  change. The two open design questions it raised — whether the percentages
+  meant opacity or transparency, and whether fading the whole HUD would
+  undermine the contrast rules below — both disappear with it.
+
+  The window stays translucent; only the *adjustability* is gone.
+  `config.json` survives as the home for the M6 mute toggle, now its only
+  setting.
 
 ## Ideas parked for later
 

@@ -25,9 +25,9 @@ deferred.
 
 **M4 done.** The producer, the window, the file watch and the wheel all work:
 the wheel drains, changes colour at 20% and 10%, and follows the reading live
-while Claude Code runs. Still to come are the translucency menu (M5), the
-alert beeps (M6), the no-data and stale states (M7), and packaging (M8). See
-`DESIGN.md` for the milestone list.
+while Claude Code runs. Still to come are the alert beeps (M6), the no-data
+and stale states (M7), and packaging (M8). See `DESIGN.md` for the milestone
+list — including M5, an adjustable-translucency menu, dropped by decision.
 
 ## Build and try it
 
