@@ -12,7 +12,7 @@ changed" in `DESIGN.md`. M6 (alerts) is the next piece of code.
 
 SimpleBar is a macOS **HUD** — an ordinary resizable app window, opening at
 800×800, that shows how much of the Claude 5-hour session limit is left, as a
-truck-tyre wheel that drains as you use it.
+circular gauge that drains as you use it.
 
 It is **not** a widget. macOS "widget" means WidgetKit, which can't be
 alt-tabbed, can't beep, and won't refresh on demand. Don't drift back toward

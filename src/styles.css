@@ -38,9 +38,10 @@ body {
   fill: rgba(217, 217, 217, 0.85);
 }
 
-/* Tread: a placeholder ring of thick dashes standing in for a knobby tyre
-   outline — see DESIGN.md, a real one is coming. */
-.tread {
+/* Ticks: the gauge's graduations — a static ring of dashes around the
+   outside. Formerly "tread", when the wheel was meant to become a truck
+   tyre; see "Decisions changed" in DESIGN.md. */
+.ticks {
   fill: none;
   stroke: #2b2b2b;
   stroke-width: 14;
@@ -119,7 +120,7 @@ body {
   font-weight: 700;
 }
 
-#wheel-container[data-band="no-data"] .tread,
+#wheel-container[data-band="no-data"] .ticks,
 #wheel-container[data-band="no-data"] .track {
   stroke: #cccccc;
 }
@@ -139,7 +140,7 @@ body {
     fill: rgba(80, 80, 80, 0.85);
   }
 
-  .tread {
+  .ticks {
     stroke: #cfcfcf;
   }
 
@@ -147,7 +148,7 @@ body {
     stroke: #4a4a4a;
   }
 
-  #wheel-container[data-band="no-data"] .tread,
+  #wheel-container[data-band="no-data"] .ticks,
   #wheel-container[data-band="no-data"] .track {
     stroke: #5a5a5a;
   }

@@ -1,9 +1,10 @@
 # SimpleBar — Design
 
 A single-window macOS app that shows how much of your Claude 5-hour session
-limit is left, as a truck-tyre wheel that drains as you use it.
+limit is left, as a circular gauge that drains as you use it.
 
-Status: agreed, stage 1 (macOS) not yet built.
+Status: M1–M4 and M6a built — producer, window, file watch, wheel and beeps.
+M5 dropped by decision. M6b onward outstanding.
 
 ## What it is
 
@@ -270,7 +271,7 @@ they are box-ticking.
   — applies at M4. The 20% and 10% states must not be signalled by colour
   alone; amber→red is exactly the red-green axis that around 8% of men cannot
   distinguish. Pair the colour change with a second cue (centre text, or a
-  change in the tread).
+  change in the ticks).
 - **[Semantic Versioning](https://semver.org/)** and
   **[Keep a Changelog](https://keepachangelog.com/)** — from the first release,
   so the version in `install.json` supports a real comparison when deciding
@@ -336,6 +337,16 @@ and stage 3 (mobile) are deliberately out of scope and not designed here.
 
 Recorded rather than edited away, so the reasoning behind a reversal is
 visible to whoever reads this next.
+
+- **The truck-tyre metaphor — abandoned, 2026-08-03.** The wheel was to be a
+  truck tyre, with the outer dashed ring standing in for a knobby tread until
+  real artwork replaced it. Abandoned: the placeholder reads as dial
+  graduations, and a gauge is what the thing actually is — a single value
+  draining around a circle. Chasing the tyre would have meant commissioning
+  artwork to make the app look like something it was never behaving as.
+
+  The dashed ring stays, renamed from `tread` to `ticks`, and is now the
+  intended look rather than a stand-in for absent art.
 
 - **Adjustable translucency — dropped, 2026-08-03.** Originally M5: a
   right-click menu offering 20/40/60/80/100%, with the choice persisted to

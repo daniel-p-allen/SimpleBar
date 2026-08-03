@@ -3,9 +3,9 @@
 See how much of your Claude 5-hour session limit is left, without asking.
 
 SimpleBar is a macOS HUD — an ordinary resizable window, not a WidgetKit
-widget — that draws your remaining session limit as a truck-tyre wheel and
-drains it as you use it. The number is account-wide: it already includes claude.ai and mobile
-usage, not just this machine.
+widget — that draws your remaining session limit as a circular gauge and
+drains it as you use it. The number is account-wide: it already includes
+claude.ai and mobile usage, not just this machine.
 
 ```
 Claude Code ──stdin JSON──▶ simplebar-statusline ──▶ usage.json
