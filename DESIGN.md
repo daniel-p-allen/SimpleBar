@@ -419,6 +419,25 @@ visible to whoever reads this next.
   `config.json` survives as the home for the M6 mute toggle, now its only
   setting.
 
+## Open, to follow up
+
+- **White ticks in both modes.** Dan's preference, 2026-08-03: the grey ticks
+  read as drab and the dark-mode face looks best. Not done yet because light
+  mode is where it bites — white ticks over a light desktop are invisible
+  (1.05:1), which is why they are near-black there today. Doing it properly
+  means giving the ticks a background they can rely on rather than the
+  desktop: extending the backdrop disc under the ring, or outlining the ticks.
+  Ties into the contrast item below.
+
+- **The contrast claim is not currently true.** "Standards adopted" cites WCAG
+  1.4.11 (3:1 for non-text), and measured against the two extremes a
+  95%-transparent window can sit on, most strokes fail: light ticks 1.48:1 on
+  black, dark ticks 1.56:1 on white, amber 2.72:1 on white. This is structural
+  rather than a bad colour pick — no single colour clears 3:1 against both a
+  white and a black desktop. Either give the strokes a known background, or
+  narrow the claim to say contrast is guaranteed only within the backdrop
+  disc, where the text lives.
+
 ## Ideas parked for later
 
 Not designed, not committed to — captured so they aren't lost, to be properly
