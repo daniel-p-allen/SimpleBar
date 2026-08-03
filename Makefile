@@ -31,6 +31,7 @@ help:
 test:
 	@cd statusline && cargo test --quiet
 	@node $(TESTS)/test_format.mjs
+	@node $(TESTS)/test_alerts.mjs
 
 # Refuse to ship if anything resembling a credential is in the tree. Stage 1
 # holds no secrets by design, so this guards against accident — a token pasted
