@@ -25,6 +25,7 @@ help:
 # malformed input, not just that the happy path works.
 test:
 	@python3 $(TESTS)/test_statusline.py
+	@node $(TESTS)/test_format.mjs
 
 # Refuse to ship if anything resembling a credential is in the tree. Stage 1
 # holds no secrets by design, so this guards against accident — a token pasted
