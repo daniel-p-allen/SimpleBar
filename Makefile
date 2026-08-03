@@ -12,7 +12,7 @@
 
 TESTS := tests
 
-.PHONY: help test check clean dev-stop
+.PHONY: help test test-producer test-app check clean dev-stop
 
 # Default target: say what you can do, rather than doing something surprising.
 help:
@@ -25,16 +25,27 @@ help:
 # every prompt render. These tests exist to prove it stays quiet and exits 0 on
 # malformed input, not just that the happy path works.
 #
-# Both Rust crates and the consumer's pure functions. The two crates are
-# separate cargo projects, so neither `cargo test` finds the other's tests —
-# the app's config handling was briefly untested for exactly that reason.
-test:
+# Everything, for local use. Split into halves below because they need
+# different things installed: `test-app` builds the Tauri crate, which drags in
+# the system webview and GTK, while `test-producer` needs only cargo and node.
+# CI runs them separately for that reason — the Linux job cannot build the app
+# and should not have to.
+test: test-producer test-app
+
+# The producer that ships in your status line, plus the consumer's pure
+# functions. The two Rust crates are separate cargo projects, so neither
+# `cargo test` finds the other's tests.
+test-producer:
 	@cd statusline && cargo test --quiet
-	@cd src-tauri && cargo test --quiet
 	@node $(TESTS)/test_format.mjs
 	@node $(TESTS)/test_alerts.mjs
 	@node $(TESTS)/test_staleness.mjs
 	@node $(TESTS)/test_selectors.mjs
+
+# The app's own Rust side — config handling. Needs the Tauri build
+# dependencies, so it belongs wherever the app is already being built.
+test-app:
+	@cd src-tauri && cargo test --quiet
 
 # Refuse to ship if anything resembling a credential is in the tree. Stage 1
 # holds no secrets by design, so this guards against accident — a token pasted

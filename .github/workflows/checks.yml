@@ -41,8 +41,10 @@ jobs:
       - name: No credentials in the repository
         run: ./scripts/check-secrets.sh
 
+      # Not `make test`: that includes the app's Rust tests, which need the
+      # system webview and GTK. This job is deliberately dependency-free.
       - name: Tests — producer and consumer
-        run: make test
+        run: make test-producer
 
       - name: Fixtures are what they claim to be
         run: |
@@ -98,3 +100,8 @@ jobs:
 
       - name: Tauri app builds
         run: cargo build --manifest-path src-tauri/Cargo.toml
+
+      # Runs here rather than in `producer` because the dependencies are
+      # already present in this job — it is the half that builds the app.
+      - name: App tests
+        run: make test-app
