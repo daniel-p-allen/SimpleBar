@@ -13,6 +13,32 @@ export function bandFor(remaining) {
   return "normal";
 }
 
+/// Model and effort as one label: "Opus 5 · Medium".
+///
+/// The separator is a middle dot rather than a dash, and deliberately lighter
+/// than the em dash in the reading above it: this line is subordinate, and the
+/// effort qualifies the model rather than standing beside it. The spaces
+/// around it are thin (U+2009), which binds the three tokens into one label
+/// instead of leaving them floating apart.
+///
+/// Effort is stored lower case, as the blob gives it, so the casing happens
+/// here. Falls back to the bare model name when there is no effort, and to an
+/// empty string when there is no model — the caller renders that as a hidden
+/// line rather than a blank one.
+export function modelLabel(modelName, effortLevel) {
+  if (!modelName) return "";
+  if (!effortLevel) return modelName;
+
+  // The thin spaces are escaped rather than literal: U+2009 is
+  // indistinguishable from an ordinary space in an editor, so writing it
+  // plainly invites a later edit to replace it without anyone noticing.
+  return `${modelName}\u2009·\u2009${titleCase(effortLevel)}`;
+}
+
+function titleCase(value) {
+  return value.charAt(0).toUpperCase() + value.slice(1);
+}
+
 /// Epoch seconds → "1:00 am", "10:00 pm".
 ///
 /// The locale is pinned to en-US rather than the system's, because DESIGN.md

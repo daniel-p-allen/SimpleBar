@@ -31,6 +31,7 @@ struct Usage {
     resets_at: i64,
     written_at: i64,
     model_name: Option<String>,
+    effort_level: Option<String>,
 }
 
 /// `$XDG_STATE_HOME`, defaulting to `~/.local/state`.
@@ -86,6 +87,16 @@ fn main() {
         .and_then(Value::as_str)
         .map(String::from);
 
+    // Stored exactly as the blob gives it — lower case. Casing for display is
+    // the consumer's business, so the file stays a record of what was read
+    // rather than of how it will be shown.
+    let effort_level = blob
+        .get("effort")
+        .and_then(Value::as_object)
+        .and_then(|e| e.get("level"))
+        .and_then(Value::as_str)
+        .map(String::from);
+
     // 12-hour with am/pm — "1:00 am", not "01:00". No leading zero on the
     // hour ("%-I" drops the pad).
     let resets_str = Local
@@ -101,7 +112,8 @@ fn main() {
             .map(|d| d.as_secs() as i64)
             .unwrap_or(0);
 
-        let usage = Usage { used_percentage: used, resets_at, written_at, model_name };
+        let usage =
+            Usage { used_percentage: used, resets_at, written_at, model_name, effort_level };
 
         // Atomic write — temp file plus rename — so a reader never sees a
         // half-written file. Never let a write failure take out the status

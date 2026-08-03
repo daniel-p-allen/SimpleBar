@@ -13,7 +13,7 @@
  * No test framework: plain asserts, so `make test` needs nothing installed.
  */
 
-import { bandFor, formatResetTime } from "../src/format.js";
+import { bandFor, formatResetTime, modelLabel } from "../src/format.js";
 
 const failures = [];
 
@@ -67,6 +67,24 @@ console.log("test_format_ignores_system_locale");
 // DESIGN.md specifies a 12-hour clock. A machine set to en-GB must still get
 // one, so the locale is pinned rather than taken from the system.
 check("13:00 renders as 1:00 pm", formatResetTime(at(13), UTC), "1:00 pm");
+
+console.log("test_model_label");
+// U+2009 thin spaces, not ordinary ones — asserted explicitly, because the
+// difference is invisible and a later edit could quietly undo it.
+check(
+  "model and effort, thin-spaced middle dot",
+  modelLabel("Opus 5", "medium"),
+  "Opus 5 · Medium",
+);
+check("effort is title-cased from the blob's lower case", modelLabel("Opus 5", "high"), "Opus 5 · High");
+// DESIGN.md: falls back to the bare model name when effort is absent, and the
+// line is omitted entirely when the model is absent too.
+check("no effort falls back to the model alone", modelLabel("Opus 5", null), "Opus 5");
+check("effort absent as undefined, not null", modelLabel("Opus 5", undefined), "Opus 5");
+check("no model gives an empty line, not a stray dot", modelLabel(null, "medium"), "");
+check("neither gives an empty line", modelLabel(null, null), "");
+// An older usage.json has neither field, and a reading is still worth showing.
+check("empty strings are treated as absent", modelLabel("", ""), "");
 
 if (failures.length) {
   console.log(`\n${failures.length} failed`);

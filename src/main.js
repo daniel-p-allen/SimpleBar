@@ -1,4 +1,4 @@
-import { bandFor, formatResetTime } from "./format.js";
+import { bandFor, formatResetTime, modelLabel } from "./format.js";
 
 const { invoke } = window.__TAURI__.core;
 const { listen } = window.__TAURI__.event;
@@ -26,7 +26,7 @@ function render(usage) {
 
   readingEl.textContent = `${remaining}% — resets ${resets}`;
   // Purely cosmetic — omit the line entirely rather than show it blank.
-  modelEl.textContent = usage.model_name ?? "";
+  modelEl.textContent = modelLabel(usage.model_name, usage.effort_level);
 }
 
 function renderNoData() {

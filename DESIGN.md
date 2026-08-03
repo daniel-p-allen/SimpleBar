@@ -20,8 +20,13 @@ window whose whole job is to display one live number.
   10% is red, not amber), one beep per threshold crossing.
 - Centre shows the percentage remaining, then the reset time on a 12-hour
   clock, lower case, no leading zero on the hour: "97% — resets 1:00 am",
-  "9% — resets 10:00 pm". Below it, in a smaller font, the model name active
-  when the reading was taken (e.g. "Opus 5") — omitted entirely when absent,
+  "9% — resets 10:00 pm". Below it, in a smaller font, the model active when
+  the reading was taken, with its effort level: "Opus 5 · Medium". The effort
+  is title-cased from the blob's lower case, and separated by a middle dot
+  with thin spaces — lighter than the em dash above, because the line is
+  subordinate to the reading and effort qualifies the model rather than
+  standing beside it. Falls back to the bare model name when effort is
+  absent, and the line is omitted entirely when the model is absent too,
   rather than showing a blank line.
 
   The percentage is not decoration: it is the non-colour cue required by the
@@ -40,9 +45,20 @@ in `~/.claude/settings.json`, on every status line render. That blob carries:
 }
 ```
 
-SimpleBar uses `five_hour` only. Separately, the blob also carries a top-level
-`"model": { "display_name": "Opus 5" }` — used only for the small label under
-the reset time, not for any usage calculation.
+SimpleBar uses `five_hour` only. Separately, the blob also carries two
+top-level fields used for the small label under the reset time, and for no
+usage calculation:
+
+```
+"model":  { "display_name": "Opus 5" },
+"effort": { "level": "medium" }        // lower case in the blob
+```
+
+The blob carries considerably more than this — `context_window`, `cost`,
+`thinking`, `fast_mode`, `output_style`, `version`, `transcript_path`. None of
+it is read, and the fields above are the whole of SimpleBar's dependency on
+Claude Code's internal schema. `context_window` in particular is *not* the
+session limit and must not be confused with `rate_limits.five_hour`.
 
 These are **account-wide** figures — the same allowance drawn down by
 claude.ai in the browser and the mobile apps — so the number is correct even
@@ -114,13 +130,19 @@ first update. Directory events are filtered by filename.
   "used_percentage": 62.5,
   "resets_at": 1754150400,
   "written_at": 1754140812,
-  "model_name": "Opus 5"
+  "model_name": "Opus 5",
+  "effort_level": "medium"
 }
 ```
 
-`model_name` is nullable — written as `null` when the blob had no `model`
-field, never omitted, so readers don't have to distinguish "absent key" from
-"no model".
+`model_name` and `effort_level` are nullable — written as `null` when the blob
+had no `model` or `effort` field, never omitted, so readers don't have to
+distinguish "absent key" from "no value". `effort_level` is stored as the blob
+gives it, lower case; casing for display is the consumer's business.
+
+Readers must tolerate both fields being missing from the file altogether: a
+`usage.json` written by an older producer predates them, and failing to parse
+it would throw away a perfectly good reading.
 
 `written_at` is ours, not Claude Code's — it is what lets the UI say how old
 the reading is.
