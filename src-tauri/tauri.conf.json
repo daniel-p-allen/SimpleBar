@@ -14,7 +14,9 @@
         "title": "SimpleBar",
         "width": 800,
         "height": 800,
-        "resizable": false,
+        "resizable": true,
+        "minWidth": 300,
+        "minHeight": 300,
         "alwaysOnTop": false,
         "transparent": true
       }

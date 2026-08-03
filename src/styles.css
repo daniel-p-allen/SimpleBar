@@ -15,10 +15,14 @@ body {
   justify-content: center;
 }
 
+/* Sized off the smaller viewport dimension, not a fixed pixel box: the window
+   is resizable, and vmin keeps the wheel circular when it is dragged out of
+   square rather than letting it stretch. 80 rather than 100 leaves the margin
+   the fixed 640-in-800 layout used to give. */
 #wheel-container {
   position: relative;
-  width: 640px;
-  height: 640px;
+  width: 80vmin;
+  height: 80vmin;
 }
 
 #wheel {
@@ -81,14 +85,21 @@ body {
   text-align: center;
 }
 
+/* vmin, not rem: the text has to scale with the wheel it sits inside, or it
+   overflows the backdrop disc as the window shrinks. These are the old fixed
+   sizes expressed as a proportion of the 800px window they were chosen in —
+   1.6rem of 800 is 3.2vmin — so the default window looks exactly as before.
+   Deliberately not clamped to a minimum: a floor would keep the text large
+   while the disc kept shrinking, which is the overflow this avoids. The
+   300px window floor is what stops it becoming unreadable. */
 #reading {
-  font-size: 1.6rem;
+  font-size: 3.2vmin;
 }
 
 #model {
-  font-size: 1.3rem;
+  font-size: 2.6vmin;
   opacity: 0.6;
-  margin-top: 0.25rem;
+  margin-top: 0.5vmin;
 }
 
 /* Colour bands. Colour is never the only signal (WCAG 1.4.1) — #reading

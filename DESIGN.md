@@ -10,9 +10,16 @@ Status: agreed, stage 1 (macOS) not yet built.
 Not a widget. macOS "widget" means WidgetKit — lives in Notification Centre,
 sits behind your windows, can't be alt-tabbed, refreshes on the system's
 schedule, can't play a sound, must be Swift. Every one of those collides with
-the requirement. SimpleBar is a **HUD**: an ordinary 800×800 application
-window whose whole job is to display one live number.
+the requirement. SimpleBar is a **HUD**: an ordinary application window whose
+whole job is to display one live number. It opens at 800×800.
 
+- Resizable, down to a 300×300 floor. Everything scales with the window —
+  the wheel tracks the *smaller* dimension, so it stays circular rather than
+  stretching into an ellipse when the window is dragged out of square, and
+  the centre text scales with it rather than staying put and overflowing.
+  The floor exists because below roughly 300 the reading stops being
+  readable, and a HUD that can be dragged down to an illegible smudge is a
+  worse default than one that refuses.
 - On screen, coverable by other windows, alt-tabbable. Not always-on-top.
 - Adjustable translucency (20/40/60/80/100%) from a right-click menu.
 - Wheel starts full, drains clockwise as the session is consumed.
