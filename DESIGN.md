@@ -3,8 +3,9 @@
 A single-window macOS app that shows how much of your Claude 5-hour session
 limit is left, as a circular gauge that drains as you use it.
 
-Status: M1–M4 and M6 built — producer, window, file watch, wheel, beeps and
-the mute toggle. M5 dropped by decision. M7 onward outstanding.
+Status: M1–M4, M6, M7 and M9 built — producer, window, file watch, wheel,
+beeps, mute, the stale and no-data states, and remembered window geometry.
+M5 dropped by decision. M8 (packaging) is what remains.
 
 ## What it is
 
