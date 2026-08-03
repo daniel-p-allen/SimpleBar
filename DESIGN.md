@@ -26,7 +26,15 @@ whole job is to display one live number. It opens at 800×800.
   changed.
 - Wheel starts full, drains clockwise as the session is consumed.
 - Amber at 20% remaining or below, red at 10% or below (inclusive — exactly
-  10% is red, not amber), one beep per threshold crossing.
+  10% is red, not amber).
+- One beep per threshold crossing, at **50, 80, 90 and 95 percent used**.
+
+  Deliberately not the same points as the colours. Colour is a continuous,
+  ambient signal and wants few states; a beep is a discrete interruption and
+  can afford more. Tying them together would mean either inventing colours
+  nobody asked for or dropping beeps that are wanted. The 50% beep is the
+  "model-switch nudge" idea arriving early: early enough in the window that
+  switching to a cheaper model still changes the outcome.
 - Centre shows the percentage remaining, then the reset time on a 12-hour
   clock, lower case, no leading zero on the hour: "97% — resets 1:00 am",
   "9% — resets 10:00 pm". Below it, in a smaller font, the model active when
@@ -41,6 +49,13 @@ whole job is to display one live number. It opens at 800×800.
   The percentage is not decoration: it is the non-colour cue required by the
   accessibility rule below, so the amber and red states stay legible to
   someone who cannot separate them by hue.
+
+  Below the model line, a speaker glyph mutes and unmutes the beeps (M6b).
+  It is the only control on the face of a HUD whose point is one number, so
+  it stays quiet: dimmed like the model line, and showing its state through
+  the glyph itself — speaker versus speaker-with-a-slash — rather than
+  through added words. It is a button, not decoration, so it carries an
+  accessible name and is reachable by keyboard.
 
 ## Where the number comes from
 
@@ -127,6 +142,12 @@ rather than shell+`jq` so there is no runtime dependency to install.
 with the `notify` crate, emitting an event to the webview on change. The
 webview draws the wheel as an SVG and owns the alert logic.
 
+The beep is synthesised in the webview with the Web Audio API — a short
+oscillator tone, no bundled sound file. Verified by spike, 2026-08-03: WebKit
+plays it without the page ever having received a user gesture, so the alert
+does not have to move to the Rust side or wait on a click that a HUD may never
+get.
+
 The watch is on the *directory*, not on `usage.json` itself. Because the
 producer writes atomically — temp file plus rename — each write replaces the
 inode, and a file watch would follow the old one and stop firing after the
@@ -212,7 +233,23 @@ down with it.
   notice. The producer tolerates missing or renamed fields, never panics, and
   leaves the last good file in place.
 - **Beeps arrive late or bunched** after a gap in Claude Code activity, for the
-  same reason as staleness.
+  same reason as staleness. Three rules follow from that, and they are the
+  whole of the alert logic:
+
+  1. **A burst gives one beep, not a volley.** If a single update crosses
+     several thresholds at once — 48% used to 92% after a long gap — only the
+     highest crossed threshold sounds. Four beeps in a row conveys nothing the
+     one beep does not.
+  2. **Startup never beeps.** The reading at launch is taken as already
+     announced, whatever it is. Only a transition *seen while running* fires.
+     Otherwise reopening the window at 91% used would beep every time, which
+     trains the user to ignore it.
+  3. **Each threshold beeps at most once per window.** Sitting past a
+     threshold is silent — it is the *crossing* that is news, not the state.
+     Twenty updates at 91% used produce one beep between them, not twenty.
+     Thresholds re-arm only when the window resets, detected by `resets_at`
+     changing; usage falls only at a reset, so nothing else can legitimately
+     re-arm one.
 - Stage 1 is macOS only. No server, no mobile, no tray icon.
 
 ## Standards adopted
@@ -260,15 +297,18 @@ any existing file untouched.
 
 **Consumer (unit tests, pure functions)**:
 - percentage → colour band, including exactly on 20 and 10
-- threshold crossing fires **once**, not on every update, and re-arms only
-  after the window resets
+- threshold crossing fires **once** per window, at 50/80/90/95 used, and
+  re-arms only when `resets_at` changes. Specifically: sitting past a
+  threshold is silent, a single update crossing several sounds only the
+  highest, and the first reading after startup never fires
 - `resets_at` epoch → 12-hour local clock string ("1:00 am", "10:00 pm"),
   including midnight, noon, and across a day boundary
 - staleness from `written_at`
 - no-data state
 
 **Not unit tested**: the SVG itself and window translucency — checked by eye at
-the milestone checkpoints.
+the milestone checkpoints. The beep is the same: that a tone is audible is
+checked by ear, while *when* it fires is pure logic and is unit tested.
 
 **Integration**: pipe a fixture into the producer and confirm the running app
 updates. Manual, at checkpoints.
@@ -284,7 +324,8 @@ Each ships and is verifiable on its own.
 | M3 | File watching | Editing `usage.json` updates the window live |
 | M4 | The wheel — SVG, drains clockwise, colour bands | Looks right at 100/50/19/9% — **integration checkpoint: visual complete** |
 | ~~M5~~ | ~~Right-click menu — translucency 20/40/60/80/100~~ | **Dropped, 2026-08-03 — see "Adjustable translucency" below.** Numbering left alone so M6–M8 keep the numbers they were built and discussed under |
-| M6 | Alerts — beep on crossing, mute toggle | Fires once per crossing, not per update |
+| M6a | Beep on crossing — 50/80/90/95 used | Fires once per crossing, not per update; a burst gives one beep; startup is silent |
+| M6b | Mute toggle — speaker glyph under the model line | Muting survives a restart, via `config.json` |
 | M7 | No-data and stale states | Grey wheel reading "no data yet" before the first write |
 | M8 | Packaging — `.app` bundle, README, statusLine wiring instructions | Installs on a clean account — **integration checkpoint: real use** |
 
