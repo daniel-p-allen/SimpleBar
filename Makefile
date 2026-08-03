@@ -24,15 +24,12 @@ help:
 # every prompt render. These tests exist to prove it stays quiet and exits 0 on
 # malformed input, not just that the happy path works.
 #
-# Three suites, because there are three things that can break independently:
-# the Rust producer that actually ships, the consumer's pure functions, and the
-# Python prototype the Rust producer was ported from. The cargo suite is the
-# one that covers the installed binary — the Python one exercises the
-# prototype only, and passing it says nothing about what runs in your status
-# line.
+# Two suites, one per half: the Rust producer that ships in your status line,
+# and the consumer's pure functions. Both cover code that actually runs — the
+# Python prototype and its tests were retired once the Rust suite covered
+# everything they did.
 test:
 	@cd statusline && cargo test --quiet
-	@python3 $(TESTS)/test_statusline.py
 	@node $(TESTS)/test_format.mjs
 
 # Refuse to ship if anything resembling a credential is in the tree. Stage 1
