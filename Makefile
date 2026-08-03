@@ -33,6 +33,7 @@ test:
 	@cd src-tauri && cargo test --quiet
 	@node $(TESTS)/test_format.mjs
 	@node $(TESTS)/test_alerts.mjs
+	@node $(TESTS)/test_staleness.mjs
 	@node $(TESTS)/test_selectors.mjs
 
 # Refuse to ship if anything resembling a credential is in the tree. Stage 1

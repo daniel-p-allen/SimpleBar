@@ -3,8 +3,8 @@
 A single-window macOS app that shows how much of your Claude 5-hour session
 limit is left, as a circular gauge that drains as you use it.
 
-Status: M1–M4 and M6a built — producer, window, file watch, wheel and beeps.
-M5 dropped by decision. M6b onward outstanding.
+Status: M1–M4 and M6 built — producer, window, file watch, wheel, beeps and
+the mute toggle. M5 dropped by decision. M7 onward outstanding.
 
 ## What it is
 
@@ -219,6 +219,47 @@ down with it.
 - **A corrupt or missing `usage.json` does not break the app.** Parse failure is
   treated as no-data — grey wheel, "no data yet". The last good reading is kept
   in memory and marked stale rather than thrown away.
+
+### Stale and no-data (M7)
+
+A reading is **stale** once either is true:
+
+- `resets_at` has passed — the window it described is over, so the figure
+  describes nothing current; or
+- nothing has been written for an hour.
+
+Stale drops the colour *and* the number: grey wheel, no percentage, reading
+`Open Claude Code to update`, with the age beneath it. The number is hidden
+rather than dimmed because a figure on screen gets believed, and an hour-old
+one will be wrong by an unknown amount.
+
+The cost is accepted deliberately: the moment you most want this HUD is often
+before starting work, which is exactly when the reading is oldest. An hour is
+the compromise — a coffee break keeps the number, an abandoned afternoon does
+not.
+
+The wording is a *mechanism*, not a diagnosis. The app cannot tell whether
+Claude Code is running; it only knows the file has not changed. "Claude Code
+isn't running" would be a claim we cannot support and would read as plainly
+wrong to someone with an idle session open. "Claude Code", not "Claude" —
+opening claude.ai refreshes nothing, and sending a user there is a dead end.
+
+The age carries as much date as it needs and no more:
+
+| When the reading was taken | Shown |
+|---|---|
+| Today | `as of 2:14 pm` |
+| Yesterday | `as of yesterday, 2:14 pm` |
+| Earlier | `as of 1 Aug, 2:14 pm` |
+
+Bare "as of 2:14 pm" on a two-day-old reading invites the reader to assume
+today. Staleness is re-evaluated on a 60-second timer, so a window left open
+crosses into stale on its own rather than waiting for a write that may never
+come.
+
+**No data at all** — no file yet, or unreadable — is a different state and says
+so: grey wheel, `no data yet`, with `run Claude Code to start` beneath. There
+is no number to protect, so the instruction can be direct.
 - **A chained third-party status line failing does not break ours.** Their
   command runs with a timeout; on non-zero exit, timeout or crash we print our
   segment alone and carry on.
@@ -335,6 +376,17 @@ Each ships and is verifiable on its own.
 | M6b | Mute toggle — speaker glyph under the model line | Muting survives a restart, via `config.json` |
 | M7 | No-data and stale states | Grey wheel reading "no data yet" before the first write |
 | M8 | Packaging — `.app` bundle, README, statusLine wiring instructions | Installs on a clean account — **integration checkpoint: real use** |
+| M9 | Window size and position remembered | Resize, quit, reopen — the window returns where it was |
+
+M9 needs no new plumbing: `config.json` and its read/write path arrived with
+M6b, so geometry is extra fields in a file that already exists. It can land
+before M8 if convenient — a window that forgets its size is a poor first
+impression on a clean install.
+
+One edge case decided in advance: a window restored to coordinates on a
+monitor that is no longer attached must be clamped back onto a visible screen.
+Restoring it faithfully would open it invisibly, and the user's only clue
+would be an app that appears not to launch.
 
 Stage 2 (a sync or server so the number refreshes without Claude Code running)
 and stage 3 (mobile) are deliberately out of scope and not designed here.

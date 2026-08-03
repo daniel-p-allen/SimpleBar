@@ -1,6 +1,8 @@
 import {
   bandFor,
+  formatAsOf,
   formatResetTime,
+  isStale,
   modelLabel,
   muteButton,
   remainingPercent,
@@ -14,6 +16,29 @@ const { listen } = window.__TAURI__.event;
 // a percentage into a stroke-dashoffset.
 const RADIUS = 72;
 const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
+
+/// Seconds since the epoch. Kept in one place so the staleness check and the
+/// age string cannot disagree about what "now" is.
+function nowSeconds() {
+  return Math.floor(Date.now() / 1000);
+}
+
+/// The reading is too old to show as a number: grey wheel, no percentage, and
+/// what to do about it.
+///
+/// The number is hidden rather than dimmed because a figure on screen gets
+/// believed, and an hour-old one is wrong by an unknown amount. The wording
+/// describes the mechanism rather than diagnosing a cause — the app cannot
+/// tell whether Claude Code is running, only that the file has not changed.
+function renderStale(usage) {
+  // Its own band, not "no-data": the two states look different because they
+  // mean different things. Stale hides a reading we *had*, so it stays grey —
+  // a full ring there would overwrite a known low number with a full-looking
+  // one. No-data never had a reading, and can afford to look inviting.
+  document.querySelector("#wheel-container").dataset.band = "stale";
+  document.querySelector("#reading").textContent = "Open Claude Code to update";
+  document.querySelector("#model").textContent = formatAsOf(usage.written_at, nowSeconds());
+}
 
 function render(usage) {
   const progressEl = document.querySelector("#progress");
@@ -95,11 +120,29 @@ async function toggleMute() {
   }
 }
 
-/// Draws a reading, and sounds a beep if it crossed a threshold.
+// The last reading received, kept so the staleness timer can re-draw without
+// waiting for a write that may never come.
+let lastUsage = null;
+
+/// Draws whichever of the three states applies to the reading we hold.
+function draw() {
+  if (lastUsage === null) {
+    renderNoData();
+  } else if (isStale(lastUsage, nowSeconds())) {
+    renderStale(lastUsage);
+  } else {
+    render(lastUsage);
+  }
+}
+
+/// Takes a new reading: sounds a beep if it crossed a threshold, then draws.
 ///
-/// Alerting is kept out of render(): render is called for the opening frame
-/// too, and mixing the two is how a HUD ends up beeping every time it opens.
+/// Alerting is kept out of the drawing: draw() also runs on the opening frame
+/// and on a timer, and mixing the two is how a HUD ends up beeping every time
+/// it opens or every minute it sits idle.
 function update(usage) {
+  lastUsage = usage;
+
   if (alertState === null) {
     alertState = initialAlertState(usage);
   } else {
@@ -110,13 +153,16 @@ function update(usage) {
     if (beepAt !== null && !muted) beep();
   }
 
-  render(usage);
+  draw();
 }
 
+/// Nothing has ever been written, or the file is unreadable. A different state
+/// from stale, and it says so: there is no number to protect, so the
+/// instruction can be direct.
 function renderNoData() {
   document.querySelector("#wheel-container").dataset.band = "no-data";
   document.querySelector("#reading").textContent = "no data yet";
-  document.querySelector("#model").textContent = "";
+  document.querySelector("#model").textContent = "run Claude Code to start";
 }
 
 // Read once for the opening frame, then let the watcher drive. The startup
@@ -138,4 +184,10 @@ window.addEventListener("DOMContentLoaded", async () => {
   } catch (err) {
     renderNoData();
   }
+
+  // A reading goes stale by the clock, not by anything arriving — so without
+  // this a window left open would keep showing a number that quietly stopped
+  // being true. Sixty seconds is the resolution DESIGN.md's performance
+  // budget allows, and it is the only timer in the app.
+  setInterval(draw, 60_000);
 });

@@ -1,10 +1,53 @@
+/* Every colour lives here, once, with a value for each mode.
+   
+   Declared as variables rather than scattered through the rules because the
+   alternative bit us: a colour added to the light rules and forgotten in the
+   dark block simply inherits the wrong value, silently. Here a missing pair is
+   visible — the variable is either in both blocks or it is wrong.
+   
+   The dark block overrides only what differs, so a colour with one value in
+   both modes is stated once. */
+:root {
+  --text: #0f0f0f;
+  --window: rgba(246, 246, 246, 0.05);
+  --backdrop: rgba(217, 217, 217, 0.85);
+  --ticks: #2b2b2b;
+  --track: #9a9a9a;
+  --band-normal: #2e9e4f;
+  --band-low: #d98c1f;
+  --band-critical: #c93b3b;
+  --nodata-ring: #4f86b8;
+  --nodata-ticks: #e8e8e8;
+  --nodata-track: #b8b8b8;
+  --stale: #cccccc;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --text: #f6f6f6;
+    --window: rgba(47, 47, 47, 0.05);
+    --backdrop: rgba(80, 80, 80, 0.85);
+    --ticks: #cfcfcf;
+    --track: #4a4a4a;
+    /* The no-data ticks stay near-white in dark mode. Darkening them is the
+       reflex and it is wrong here: they are the one part of this state meant
+       to read as bright. */
+    --nodata-ticks: #f2f2f2;
+    --nodata-track: #4a4a4a;
+    /* Lifted: the light-mode blue goes muddy against a dark desktop showing
+       through a 95%-transparent window. */
+    --nodata-ring: #6ea8dc;
+    --stale: #5a5a5a;
+  }
+}
+
+/* The native window is transparent (tauri.conf.json) — the --window alpha is
+   what actually makes it 95% see-through. Text stays fully opaque via
+   `color`; only the backdrop fades. */
 :root {
   font-family: -apple-system, Helvetica, Arial, sans-serif;
-  color: #0f0f0f;
-  /* The native window is transparent (tauri.conf.json) — this alpha is what
-     actually makes the window 95% see-through. Text stays fully opaque via
-     `color` above; only the backdrop fades. */
-  background-color: rgba(246, 246, 246, 0.05);
+  color: var(--text);
+  background-color: var(--window);
 }
 
 body {
@@ -31,11 +74,11 @@ body {
 }
 
 /* Backdrop: solid disc behind the centre text, high opacity — deliberately
-   not the ~5% window alpha, so text stays legible regardless of what's on
-   the desktop behind the window. Light-mode tone here; dark mode overrides
-   below to stay readable against the light-mode (#0f0f0f) text colour. */
+   not the ~5% window alpha, so text stays legible regardless of what is on
+   the desktop behind the window. This disc is where legibility is actually
+   guaranteed; the strokes outside it sit on an arbitrary background. */
 .backdrop {
-  fill: rgba(217, 217, 217, 0.85);
+  fill: var(--backdrop);
 }
 
 /* Ticks: the gauge's graduations — a static ring of dashes around the
@@ -43,7 +86,7 @@ body {
    tyre; see "Decisions changed" in DESIGN.md. */
 .ticks {
   fill: none;
-  stroke: #2b2b2b;
+  stroke: var(--ticks);
   stroke-width: 14;
   stroke-dasharray: 10 7;
 }
@@ -54,7 +97,7 @@ body {
    showing through behind it. */
 .track {
   fill: none;
-  stroke: #9a9a9a;
+  stroke: var(--track);
   stroke-width: 16;
 }
 
@@ -73,7 +116,7 @@ body {
   transform: rotate(90deg) scaleX(-1);
   transform-origin: 100px 100px;
   transition: stroke-dashoffset 400ms ease, stroke 400ms ease;
-  stroke: #2e9e4f; /* normal band */
+  stroke: var(--band-normal);
 }
 
 #center-text {
@@ -146,49 +189,49 @@ body {
    also gains weight so the low/critical states read without relying on
    colour perception, without adding text that wasn't asked for. */
 #wheel-container[data-band="low"] #progress {
-  stroke: #d98c1f;
+  stroke: var(--band-low);
 }
 #wheel-container[data-band="low"] #reading {
   font-weight: 700;
 }
 
 #wheel-container[data-band="critical"] #progress {
-  stroke: #c93b3b;
+  stroke: var(--band-critical);
 }
 #wheel-container[data-band="critical"] #reading {
   font-weight: 700;
 }
 
-#wheel-container[data-band="no-data"] .ticks,
+/* No data yet — the first run, before the producer has ever written. A broken
+   grey face is a poor first impression, so this state looks deliberate: pale
+   ticks and a complete ring.
+
+   The ring is slate blue, not green. A full green ring is the universal sign
+   for "100% left", and asserting that when we know nothing is the most
+   dangerous misreading available here — a user would conclude they had their
+   whole allowance. Blue belongs to no band, so it reads as "not a reading"
+   rather than as a good one. */
+#wheel-container[data-band="no-data"] .ticks {
+  stroke: var(--nodata-ticks);
+}
 #wheel-container[data-band="no-data"] .track {
-  stroke: #cccccc;
+  stroke: var(--nodata-track);
 }
 #wheel-container[data-band="no-data"] #progress {
   stroke-dasharray: none;
   stroke-dashoffset: 0;
-  stroke: none;
+  stroke: var(--nodata-ring);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    color: #f6f6f6;
-    background-color: rgba(47, 47, 47, 0.05);
-  }
-
-  .backdrop {
-    fill: rgba(80, 80, 80, 0.85);
-  }
-
-  .ticks {
-    stroke: #cfcfcf;
-  }
-
-  .track {
-    stroke: #4a4a4a;
-  }
-
-  #wheel-container[data-band="no-data"] .ticks,
-  #wheel-container[data-band="no-data"] .track {
-    stroke: #5a5a5a;
-  }
+/* Stale — we had a reading and it aged out. Stays grey and stays empty: the
+   number is hidden because it can no longer be trusted, and a full ring would
+   replace a known low reading with a full-looking one. */
+#wheel-container[data-band="stale"] .ticks,
+#wheel-container[data-band="stale"] .track {
+  stroke: var(--stale);
+}
+#wheel-container[data-band="stale"] #progress {
+  stroke-dasharray: none;
+  stroke-dashoffset: 0;
+  stroke: none;
 }

@@ -54,6 +54,63 @@ export function remainingPercent(usedPercentage) {
   return Math.round(100 - usedPercentage);
 }
 
+/// An hour without a write makes a reading stale. See STALE below.
+const STALE_AFTER_SECONDS = 60 * 60;
+
+/// Whether a reading is too old to show as a number.
+///
+/// Two ways to go stale, per DESIGN.md. Either the window it described is
+/// over — `resets_at` in the past, so the figure describes nothing current —
+/// or nothing has been written for an hour.
+///
+/// The hour is a compromise, and the trade-off is real: the moment the HUD is
+/// most wanted is often before starting work, which is exactly when the
+/// reading is oldest. A coffee break keeps the number; an abandoned afternoon
+/// does not.
+///
+/// `now` is passed in rather than read from the clock, so this stays pure.
+export function isStale(reading, now) {
+  if (!reading || typeof reading.written_at !== "number") return true;
+
+  if (typeof reading.resets_at === "number" && now >= reading.resets_at) return true;
+
+  return now - reading.written_at >= STALE_AFTER_SECONDS;
+}
+
+/// "as of 2:14 pm", with as much date as it takes to be unambiguous.
+///
+/// A bare clock time on a two-day-old reading invites the reader to assume
+/// today, which is the confusion the whole stale state exists to prevent. So
+/// yesterday says so, and anything older carries its date.
+///
+/// Compares calendar days, not elapsed hours: a reading from 11pm viewed at
+/// 1am is two hours old but genuinely *yesterday*, and saying so is clearer
+/// than "as of 11:00 pm" on what the reader thinks of as today.
+export function formatAsOf(writtenAt, now, timeZone) {
+  const when = new Date(writtenAt * 1000);
+  const today = new Date(now * 1000);
+
+  const time = formatResetTime(writtenAt, timeZone);
+  const dayDelta = calendarDaysApart(when, today, timeZone);
+
+  if (dayDelta === 0) return `as of ${time}`;
+  if (dayDelta === 1) return `as of yesterday, ${time}`;
+
+  const options = { day: "numeric", month: "short" };
+  if (timeZone) options.timeZone = timeZone;
+  return `as of ${when.toLocaleDateString("en-GB", options)}, ${time}`;
+}
+
+/// Whole calendar days between two dates, in the given zone.
+function calendarDaysApart(earlier, later, timeZone) {
+  const options = { year: "numeric", month: "2-digit", day: "2-digit" };
+  if (timeZone) options.timeZone = timeZone;
+
+  // en-CA gives YYYY-MM-DD, which subtracts correctly as a date.
+  const toDay = (d) => new Date(`${d.toLocaleDateString("en-CA", options)}T00:00:00Z`);
+  return Math.round((toDay(later) - toDay(earlier)) / 86400000);
+}
+
 /// How the mute button should present itself.
 ///
 /// The glyph alone carries the state visually — speaker versus
