@@ -33,6 +33,16 @@
       <div id="center-text">
         <div id="reading">Loading…</div>
         <div id="model"></div>
+        <!--
+          A real <button>, not a styled div: it is the only control on the
+          face of the HUD, and this is what gets it keyboard focus, Enter and
+          Space, and an announced role for free. aria-pressed carries the
+          state, so the glyph is decoration to a screen reader rather than
+          something it has to interpret.
+        -->
+        <button id="mute" type="button" aria-pressed="false">
+          <span id="mute-glyph" aria-hidden="true">🔊</span>
+        </button>
       </div>
     </div>
   </body>

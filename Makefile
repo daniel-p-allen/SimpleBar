@@ -25,12 +25,12 @@ help:
 # every prompt render. These tests exist to prove it stays quiet and exits 0 on
 # malformed input, not just that the happy path works.
 #
-# Two suites, one per half: the Rust producer that ships in your status line,
-# and the consumer's pure functions. Both cover code that actually runs — the
-# Python prototype and its tests were retired once the Rust suite covered
-# everything they did.
+# Both Rust crates and the consumer's pure functions. The two crates are
+# separate cargo projects, so neither `cargo test` finds the other's tests —
+# the app's config handling was briefly untested for exactly that reason.
 test:
 	@cd statusline && cargo test --quiet
+	@cd src-tauri && cargo test --quiet
 	@node $(TESTS)/test_format.mjs
 	@node $(TESTS)/test_alerts.mjs
 	@node $(TESTS)/test_selectors.mjs

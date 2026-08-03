@@ -1,8 +1,12 @@
-//! SimpleBar — M3.
+//! SimpleBar — the window.
 //!
 //! Reads `usage.json` at startup on request from the frontend, then watches it
 //! and pushes each new reading to the webview. The window owns no usage logic
 //! beyond that: the Rust side yields plain data, the webview draws it.
+//!
+//! Also owns `config.json`, the one place a preference is remembered between
+//! runs. The webview asks for it and asks for it to change; it never learns
+//! where it lives.
 
 use notify::{EventKind, RecommendedWatcher, RecursiveMode, Watcher};
 use serde::{Deserialize, Serialize};
@@ -27,6 +31,76 @@ struct Usage {
     model_name: Option<String>,
     #[serde(default)]
     effort_level: Option<String>,
+}
+
+/// Preferences remembered between runs.
+///
+/// Every field defaults, and the whole file is optional: a first run has no
+/// config.json at all, and a hand-edited one may be missing keys or malformed.
+/// None of that is worth an error message on a HUD — the defaults are the
+/// unsurprising behaviour, so a broken file quietly behaves like a fresh
+/// install rather than blocking the window.
+#[derive(Serialize, Deserialize, Clone, Default, PartialEq, Debug)]
+struct Config {
+    /// Sound is on unless the user turned it off. Muting persists until they
+    /// unmute — it does not expire daily and the app never asks. A mute that
+    /// silently lapses would beep when the user thought they were safe from
+    /// it; what makes indefinite muting safe is that the glyph shows the
+    /// state, so a mute set last week is visible rather than mysterious.
+    #[serde(default)]
+    muted: bool,
+}
+
+/// `$XDG_CONFIG_HOME`, defaulting to `~/.config`.
+fn config_dir() -> Option<PathBuf> {
+    if let Ok(xdg) = env::var("XDG_CONFIG_HOME") {
+        if !xdg.is_empty() {
+            return Some(PathBuf::from(xdg));
+        }
+    }
+    env::var("HOME").ok().map(|home| PathBuf::from(home).join(".config"))
+}
+
+/// Parses config text, falling back to defaults on anything unusable.
+///
+/// Separate from the file read so the fallback behaviour is testable without
+/// a filesystem.
+fn config_from_str(raw: &str) -> Config {
+    serde_json::from_str(raw).unwrap_or_default()
+}
+
+#[tauri::command]
+fn read_config() -> Config {
+    let Some(dir) = config_dir() else { return Config::default() };
+    let Ok(raw) = fs::read_to_string(dir.join("simplebar").join("config.json")) else {
+        // No file yet is the ordinary first-run case, not an error.
+        return Config::default();
+    };
+    config_from_str(&raw)
+}
+
+/// Persists the config, atomically, and reports whether it stuck.
+///
+/// `Err` matters here in a way it does not for the reading: the user clicked
+/// something, and a preference that silently fails to save is worse than one
+/// that says so — they would find it forgotten on the next launch with no
+/// clue why.
+#[tauri::command]
+fn set_muted(muted: bool) -> Result<Config, String> {
+    let dir = config_dir().ok_or("no home directory")?.join("simplebar");
+    fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
+
+    let config = Config { muted };
+    let encoded = serde_json::to_vec_pretty(&config).map_err(|e| e.to_string())?;
+
+    // Temp file plus rename, as with usage.json — a config half-written by a
+    // crash would read as malformed on next launch and silently lose the
+    // setting.
+    let tmp = dir.join("config.json.tmp");
+    fs::write(&tmp, encoded).map_err(|e| e.to_string())?;
+    fs::rename(&tmp, dir.join("config.json")).map_err(|e| e.to_string())?;
+
+    Ok(config)
 }
 
 /// `$XDG_STATE_HOME`, defaulting to `~/.local/state`.
@@ -127,7 +201,47 @@ pub fn run() {
             spawn_watcher(app.handle().clone());
             Ok(())
         })
-        .invoke_handler(tauri::generate_handler![read_usage])
+        .invoke_handler(tauri::generate_handler![read_usage, read_config, set_muted])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn a_missing_key_defaults_to_unmuted() {
+        // A config written before `muted` existed, or hand-edited.
+        assert_eq!(config_from_str("{}"), Config { muted: false });
+    }
+
+    #[test]
+    fn the_stored_value_is_honoured() {
+        assert_eq!(config_from_str(r#"{"muted":true}"#), Config { muted: true });
+        assert_eq!(config_from_str(r#"{"muted":false}"#), Config { muted: false });
+    }
+
+    #[test]
+    fn unusable_config_falls_back_to_defaults() {
+        // Sound on is the unsurprising behaviour, and a HUD is the wrong place
+        // to report a broken preferences file. Each of these must behave like
+        // a fresh install rather than blocking the window.
+        for raw in ["", "{ not json", "null", "[]", "42", r#"{"muted":"yes"}"#] {
+            assert_eq!(config_from_str(raw), Config::default(), "{raw:?} should default");
+        }
+    }
+
+    #[test]
+    fn unknown_keys_are_ignored_not_fatal() {
+        // A newer build's config, or window geometry added later, must not
+        // stop an older build from reading the mute flag it does understand.
+        let raw = r#"{"muted":true,"window":{"width":900},"future_setting":"x"}"#;
+        assert_eq!(config_from_str(raw), Config { muted: true });
+    }
+
+    #[test]
+    fn the_default_is_sound_on() {
+        assert!(!Config::default().muted, "sound must be on until turned off");
+    }
 }

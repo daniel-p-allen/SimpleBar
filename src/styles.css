@@ -103,6 +103,36 @@ body {
   margin-top: 0.5vmin;
 }
 
+/* The mute button. Stripped of its native chrome and kept dim, because it is
+   the only control on a face whose whole job is one number — it should be
+   findable when looked for and invisible when not. Brightens on hover and
+   focus so it does not feel dead. */
+#mute {
+  margin-top: 1vmin;
+  padding: 0.6vmin;
+  border: none;
+  background: none;
+  font-size: 2.4vmin;
+  line-height: 1;
+  cursor: pointer;
+  opacity: 0.35;
+  transition: opacity 150ms ease;
+}
+
+#mute:hover {
+  opacity: 0.8;
+}
+
+/* Focus is never removed, only restyled: this is the sole keyboard target in
+   the window, and an invisible focus ring would make it unreachable in
+   practice for anyone not using a mouse (WCAG 2.4.7). */
+#mute:focus-visible {
+  opacity: 1;
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
 /* Colour bands. Colour is never the only signal (WCAG 1.4.1) — #reading
    also gains weight so the low/critical states read without relying on
    colour perception, without adding text that wasn't asked for. */

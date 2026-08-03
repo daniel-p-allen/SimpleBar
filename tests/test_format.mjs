@@ -13,7 +13,7 @@
  * No test framework: plain asserts, so `make test` needs nothing installed.
  */
 
-import { bandFor, formatResetTime, modelLabel } from "../src/format.js";
+import { bandFor, formatResetTime, modelLabel, muteButton } from "../src/format.js";
 
 const failures = [];
 
@@ -85,6 +85,18 @@ check("no model gives an empty line, not a stray dot", modelLabel(null, "medium"
 check("neither gives an empty line", modelLabel(null, null), "");
 // An older usage.json has neither field, and a reading is still worth showing.
 check("empty strings are treated as absent", modelLabel("", ""), "");
+
+console.log("test_mute_button");
+check("unmuted shows a speaker", muteButton(false).glyph, "\u{1F50A}");
+check("muted shows a crossed speaker", muteButton(true).glyph, "\u{1F507}");
+// The label names the action, not the state — "Muted" would leave a screen
+// reader user guessing what pressing it does. State rides on aria-pressed.
+check("unmuted label names the action", muteButton(false).label, "Mute alerts");
+check("muted label names the action", muteButton(true).label, "Unmute alerts");
+check("aria-pressed is false when unmuted", muteButton(false).pressed, "false");
+check("aria-pressed is true when muted", muteButton(true).pressed, "true");
+// Glyphs must differ, or the only visual signal of state disappears.
+check("the two glyphs differ", muteButton(false).glyph !== muteButton(true).glyph, true);
 
 if (failures.length) {
   console.log(`\n${failures.length} failed`);

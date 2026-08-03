@@ -1,4 +1,4 @@
-import { bandFor, formatResetTime, modelLabel } from "./format.js";
+import { bandFor, formatResetTime, modelLabel, muteButton } from "./format.js";
 import { initialAlertState, nextAlertState } from "./alerts.js";
 
 const { invoke } = window.__TAURI__.core;
@@ -59,6 +59,36 @@ function beep() {
 // already announced, which is what keeps startup silent.
 let alertState = null;
 
+// Mirrors config.json. Read once at startup; the Rust side owns the file.
+let muted = false;
+
+function renderMute() {
+  const { glyph, label, pressed } = muteButton(muted);
+  document.querySelector("#mute-glyph").textContent = glyph;
+
+  const button = document.querySelector("#mute");
+  button.setAttribute("aria-label", label);
+  button.setAttribute("aria-pressed", pressed);
+}
+
+/// Flips the mute setting, persisting before the UI moves.
+///
+/// Saved first, then drawn — the opposite order would let the glyph show a
+/// setting that never reached disk, and the user would find it forgotten on
+/// the next launch with nothing to explain why. The write is a local file, so
+/// the wait is imperceptible.
+async function toggleMute() {
+  try {
+    const config = await invoke("set_muted", { muted: !muted });
+    muted = config.muted;
+    renderMute();
+  } catch (err) {
+    // Leave the glyph showing what is actually stored. The alternative — a
+    // glyph that lies — is worse than a click that appears not to work.
+    console.error("could not save mute setting:", err);
+  }
+}
+
 /// Draws a reading, and sounds a beep if it crossed a threshold.
 ///
 /// Alerting is kept out of render(): render is called for the opening frame
@@ -69,7 +99,9 @@ function update(usage) {
   } else {
     const { state, beepAt } = nextAlertState(alertState, usage);
     alertState = state;
-    if (beepAt !== null) beep();
+    // Crossings are still recorded while muted — unmuting must not replay
+    // every threshold the session already passed.
+    if (beepAt !== null && !muted) beep();
   }
 
   render(usage);
@@ -88,6 +120,12 @@ window.addEventListener("DOMContentLoaded", async () => {
   // Subscribe before the first read, so a write landing between the two is
   // delivered rather than dropped.
   await listen("usage-changed", (event) => update(event.payload));
+
+  // Before the first reading, so a threshold crossed by that reading cannot
+  // beep while the app still believes it is unmuted.
+  muted = (await invoke("read_config")).muted;
+  renderMute();
+  document.querySelector("#mute").addEventListener("click", toggleMute);
 
   try {
     update(await invoke("read_usage"));

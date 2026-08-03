@@ -39,6 +39,22 @@ function titleCase(value) {
   return value.charAt(0).toUpperCase() + value.slice(1);
 }
 
+/// How the mute button should present itself.
+///
+/// The glyph alone carries the state visually — speaker versus
+/// speaker-with-a-slash — so no words are added to a face whose point is one
+/// number. The label is for screen readers and names the *action*, not the
+/// state: a button announced "Mute alerts" tells you what pressing it does,
+/// while "Muted" leaves you guessing. `pressed` carries the state instead,
+/// via aria-pressed.
+export function muteButton(muted) {
+  return {
+    glyph: muted ? "🔇" : "🔊",
+    label: muted ? "Unmute alerts" : "Mute alerts",
+    pressed: muted ? "true" : "false",
+  };
+}
+
 /// Epoch seconds → "1:00 am", "10:00 pm".
 ///
 /// The locale is pinned to en-US rather than the system's, because DESIGN.md
