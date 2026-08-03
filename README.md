@@ -24,21 +24,42 @@ deferred.
 
 ## Status
 
-**M4 done.** The producer, the window, the file watch and the wheel all work:
-the wheel drains, changes colour at 20% and 10%, and follows the reading live
-while Claude Code runs. Still to come are the alert beeps (M6), the no-data
-and stale states (M7), and packaging (M8). See `DESIGN.md` for the milestone
-list — including M5, an adjustable-translucency menu, dropped by decision.
+**M1–M4, M6, M7 and M9 built.** The producer, window, file watch and wheel
+work: the wheel drains, changes colour at 20% and 10%, and follows the reading
+live while Claude Code runs. It beeps once on each threshold crossing with a
+mute toggle (M6), shows no-data and stale states (M7), and remembers its size
+and position across restarts (M9). What remains is packaging into a `.app`
+bundle (M8). See `DESIGN.md` for the full milestone list — including M5, an
+adjustable-translucency menu, dropped by decision.
 
-## Build and try it
+## Requirements
 
-Both halves are Rust; the window is Tauri, so it also needs Node for the
-Tauri CLI.
+- **macOS.** Stage 1 is macOS only.
+- **Rust** — install via [rustup](https://rust-lang.org/tools/install/)
+  ([other methods](https://forge.rust-lang.org/infra/other-installation-methods.html#which)).
+- **Node.js** (18 or newer) for the Tauri CLI.
+- **Xcode Command Line Tools** — Tauri builds the window against them. If you
+  don't have them: `xcode-select --install`.
+
+## Build and run
+
+There's no packaged `.app` yet (that's M8) — for now you run it from source.
 
 ```sh
-cd statusline && cargo build      # the producer
-npm install && npx tauri dev      # the window
+git clone https://github.com/daniel-p-allen/SimpleBar.git
+cd SimpleBar
 
+cargo build --manifest-path statusline/Cargo.toml   # the producer
+npm install && npx tauri dev                         # the window
+```
+
+The first `npx tauri dev` compiles the Rust window, so it takes a few minutes;
+later runs are fast. The window opens showing "no data yet" until you wire the
+producer into Claude Code (below) and run a prompt.
+
+Check your work:
+
+```sh
 make test    # both test suites
 make check   # refuse to ship a committed credential
 ```
@@ -73,7 +94,6 @@ src-tauri/     Rust — window, file watching
 src/           webview UI — HTML/CSS/SVG, the wheel
 scripts/       repo tooling (check-secrets.sh)
 tests/         shared fixtures, and the consumer's tests
-docs/
 ```
 
 ## License
