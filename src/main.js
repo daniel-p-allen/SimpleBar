@@ -34,7 +34,9 @@ function render(usage) {
   const band = bandFor(remaining);
   wheelEl.dataset.band = band;
 
-  readingEl.textContent = `${remaining}% - Resets @ ${resets}`;
+  // Lower-cased because some locales render "AM"/"PM" upper case, and the
+  // centre line is specified lower case throughout.
+  readingEl.textContent = `${remaining}% — resets ${resets.toLowerCase()}`;
   // Purely cosmetic — omit the line entirely rather than show it blank.
   modelEl.textContent = usage.model_name ?? "";
 }

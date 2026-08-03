@@ -18,10 +18,15 @@ window whose whole job is to display one live number.
 - Wheel starts full, drains clockwise as the session is consumed.
 - Amber at 20% remaining or below, red at 10% or below (inclusive — exactly
   10% is red, not amber), one beep per threshold crossing.
-- Centre shows the reset time on a 12-hour clock, lower case, no leading zero
-  on the hour: "resets 1:00 am", "resets 10:00 pm". Below it, in a smaller
-  font, the model name active when the reading was taken (e.g. "Opus 5") —
-  omitted entirely when absent, rather than showing a blank line.
+- Centre shows the percentage remaining, then the reset time on a 12-hour
+  clock, lower case, no leading zero on the hour: "97% — resets 1:00 am",
+  "9% — resets 10:00 pm". Below it, in a smaller font, the model name active
+  when the reading was taken (e.g. "Opus 5") — omitted entirely when absent,
+  rather than showing a blank line.
+
+  The percentage is not decoration: it is the non-colour cue required by the
+  accessibility rule below, so the amber and red states stay legible to
+  someone who cannot separate them by hue.
 
 ## Where the number comes from
 
