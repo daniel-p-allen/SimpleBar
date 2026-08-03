@@ -1,6 +1,7 @@
 # SimpleBar
 
-See how much of your Claude 5-hour session limit is left, without asking.
+**A visual usage monitor for Claude Code.** See how much of your Claude
+5-hour session limit is left, without asking.
 
 SimpleBar is a macOS HUD — an ordinary resizable window, not a WidgetKit
 widget — that draws your remaining session limit as a circular gauge and
