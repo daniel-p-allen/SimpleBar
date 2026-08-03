@@ -39,6 +39,21 @@ function titleCase(value) {
   return value.charAt(0).toUpperCase() + value.slice(1);
 }
 
+/// Percent remaining, as a whole number.
+///
+/// Rounded because binary floating point cannot hold most decimals exactly:
+/// 100 - 55.00000000000001 is 44.99999999999999, and the window rendered
+/// every digit of it. The producer already rounds for the status line, so
+/// this also keeps the two displays saying the same thing.
+///
+/// The rounded value is what the colour band is judged on too, not the raw
+/// one. If they disagreed, a reading of "10%" could sit in the amber band
+/// while DESIGN.md says exactly 10 is red — and since the number is the
+/// non-colour cue for that very rule, the two must never contradict.
+export function remainingPercent(usedPercentage) {
+  return Math.round(100 - usedPercentage);
+}
+
 /// How the mute button should present itself.
 ///
 /// The glyph alone carries the state visually — speaker versus

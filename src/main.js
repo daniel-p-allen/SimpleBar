@@ -1,4 +1,10 @@
-import { bandFor, formatResetTime, modelLabel, muteButton } from "./format.js";
+import {
+  bandFor,
+  formatResetTime,
+  modelLabel,
+  muteButton,
+  remainingPercent,
+} from "./format.js";
 import { initialAlertState, nextAlertState } from "./alerts.js";
 
 const { invoke } = window.__TAURI__.core;
@@ -15,7 +21,7 @@ function render(usage) {
   const modelEl = document.querySelector("#model");
   const wheelEl = document.querySelector("#wheel-container");
 
-  const remaining = 100 - usage.used_percentage;
+  const remaining = remainingPercent(usage.used_percentage);
   const resets = formatResetTime(usage.resets_at);
 
   const offset = CIRCUMFERENCE * (1 - remaining / 100);

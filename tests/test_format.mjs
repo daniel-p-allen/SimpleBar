@@ -13,7 +13,13 @@
  * No test framework: plain asserts, so `make test` needs nothing installed.
  */
 
-import { bandFor, formatResetTime, modelLabel, muteButton } from "../src/format.js";
+import {
+  bandFor,
+  formatResetTime,
+  modelLabel,
+  muteButton,
+  remainingPercent,
+} from "../src/format.js";
 
 const failures = [];
 
@@ -86,9 +92,20 @@ check("neither gives an empty line", modelLabel(null, null), "");
 // An older usage.json has neither field, and a reading is still worth showing.
 check("empty strings are treated as absent", modelLabel("", ""), "");
 
+console.log("test_remaining_percent");
+// The bug this exists for: the window rendered "44.99999999999999%".
+check("floating point noise is rounded away", remainingPercent(55.00000000000001), 45);
+check("a whole number is unchanged", remainingPercent(17), 83);
+check("a half rounds up", remainingPercent(50.5), 50);
+check("nothing used is 100", remainingPercent(0), 100);
+check("all used is 0", remainingPercent(100), 0);
+// The rounded value drives the colour band too, so the two cannot contradict.
+check("rounds onto the red boundary", bandFor(remainingPercent(90.4)), "critical");
+check("rounds onto the amber boundary", bandFor(remainingPercent(80.3)), "low");
+
 console.log("test_mute_button");
-check("unmuted shows a speaker", muteButton(false).glyph, "\u{1F50A}");
-check("muted shows a crossed speaker", muteButton(true).glyph, "\u{1F507}");
+check("unmuted shows a speaker", muteButton(false).glyph, "🔊");
+check("muted shows a crossed speaker", muteButton(true).glyph, "🔇");
 // The label names the action, not the state — "Muted" would leave a screen
 // reader user guessing what pressing it does. State rides on aria-pressed.
 check("unmuted label names the action", muteButton(false).label, "Mute alerts");

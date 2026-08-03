@@ -51,6 +51,12 @@ whole job is to display one live number. It opens at 800×800.
   accessibility rule below, so the amber and red states stay legible to
   someone who cannot separate them by hue.
 
+  It is shown as a whole number, rounded — binary floating point cannot hold
+  most decimals exactly, and `100 - 55.00000000000001` renders as
+  `44.99999999999999` if left alone. The *rounded* figure is also what the
+  colour band is judged on, so the number and the colour can never disagree
+  about which band the reading is in.
+
   Below the model line, a speaker glyph mutes and unmutes the beeps (M6b).
   It is the only control on the face of a HUD whose point is one number, so
   it stays quiet: dimmed like the model line, and showing its state through
