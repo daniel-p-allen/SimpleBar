@@ -41,8 +41,11 @@ whole job is to display one live number. It opens at 800×800.
   clock, lower case, no leading zero on the hour: "97% — resets 1:00 am",
   "9% — resets 10:00 pm". Below it, in a smaller font, the model active when
   the reading was taken, with its effort level: "Opus 5 · Medium". The effort
-  is title-cased from the blob's lower case, and separated by a middle dot
-  with thin spaces — lighter than the em dash above, because the line is
+  is title-cased from the blob's lower case — simply, first letter only, so
+  "xhigh" shows as "Xhigh". Accepted as-is, 2026-08-03: inventing prettier
+  names would mean a lookup table that goes stale the moment Claude Code adds
+  a level. Separated from the model by a middle dot with thin spaces —
+  lighter than the em dash above, because the line is
   subordinate to the reading and effort qualifies the model rather than
   standing beside it. Falls back to the bare model name when effort is
   absent, and the line is omitted entirely when the model is absent too,
