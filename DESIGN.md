@@ -97,6 +97,11 @@ rather than shell+`jq` so there is no runtime dependency to install.
 with the `notify` crate, emitting an event to the webview on change. The
 webview draws the wheel as an SVG and owns the alert logic.
 
+The watch is on the *directory*, not on `usage.json` itself. Because the
+producer writes atomically — temp file plus rename — each write replaces the
+inode, and a file watch would follow the old one and stop firing after the
+first update. Directory events are filtered by filename.
+
 `usage.json` schema:
 
 ```json

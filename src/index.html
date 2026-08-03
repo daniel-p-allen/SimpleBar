@@ -10,9 +10,9 @@
 
   <body>
     <!--
-      M4: the wheel. Static read from M2 still — this window only reflects
-      whatever the reading was when it opened, until M3 wires up the file
-      watch and this stops being a snapshot.
+      The wheel. Live as of M3: the Rust side watches usage.json and pushes
+      each new reading in, so this reflects the current number rather than a
+      snapshot taken when the window opened.
     -->
     <div id="wheel-container">
       <svg id="wheel" viewBox="0 0 200 200">

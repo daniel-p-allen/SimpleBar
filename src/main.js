@@ -1,4 +1,5 @@
 const { invoke } = window.__TAURI__.core;
+const { listen } = window.__TAURI__.event;
 
 // The progress circle's radius (matches r="72" in index.html) — used to turn
 // a percentage into a stroke-dashoffset.
@@ -44,9 +45,14 @@ function renderNoData() {
   document.querySelector("#model").textContent = "";
 }
 
-// M2: read once at startup. No file watching yet (M3) — the wheel is a
-// snapshot of whatever the reading was when this window opened.
+// Read once for the opening frame, then let the watcher drive. The startup
+// read is still needed: the file only changes while Claude Code is running, so
+// without it an idle session would show nothing until the next prompt.
 window.addEventListener("DOMContentLoaded", async () => {
+  // Subscribe before the first read, so a write landing between the two is
+  // delivered rather than dropped.
+  await listen("usage-changed", (event) => render(event.payload));
+
   try {
     render(await invoke("read_usage"));
   } catch (err) {
