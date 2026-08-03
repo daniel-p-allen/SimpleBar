@@ -28,10 +28,20 @@ jobs:
         with:
           python-version: '3.12'
 
+      # `make test` runs both suites — cargo for the producer, node for the
+      # consumer — so both toolchains have to be here before it, not after.
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
       - name: No credentials in the repository
         run: ./scripts/check-secrets.sh
 
-      - name: Producer tests (Python prototype)
+      - name: Tests — producer and consumer
         run: make test
 
       - name: Fixtures are what they claim to be
@@ -49,22 +59,24 @@ jobs:
             fi
           done
 
-      - name: Set up Rust
-        uses: dtolnay/rust-toolchain@stable
-
       - name: Rust producer builds
         run: cargo build --manifest-path statusline/Cargo.toml
 
-      - name: Rust producer matches the prototype against every fixture
+      # The prototype this used to be compared against was retired once the
+      # Rust tests covered everything its tests did. What is still worth
+      # asserting is the property that mattered in the status line: whatever
+      # the fixture, the producer exits 0 and never writes to stderr. A status
+      # line that errors is worse than one that prints nothing.
+      - name: Producer stays quiet on every fixture
         run: |
           BIN=statusline/target/debug/simplebar-statusline
+          # Redirected so the run cannot write into a real state directory.
+          export XDG_STATE_HOME="$(mktemp -d)"
           for f in tests/fixtures/*.json; do
-            py_out=$(python3 scripts/statusline-prototype.py < "$f" 2>/dev/null || true)
-            rs_out=$("$BIN" < "$f" 2>/dev/null || true)
-            [ "$py_out" = "$rs_out" ] || {
-              echo "  FAIL $f: python=[$py_out] rust=[$rs_out]"
-              exit 1
-            }
+            err=$("$BIN" < "$f" 2>&1 >/dev/null)
+            code=$?
+            [ "$code" = "0" ] || { echo "  FAIL $f: exit $code"; exit 1; }
+            [ -z "$err" ] || { echo "  FAIL $f: wrote to stderr: $err"; exit 1; }
             echo "  ok  $f"
           done
 
