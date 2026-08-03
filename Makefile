@@ -23,7 +23,15 @@ help:
 # The producer runs inside Claude Code's status line, in the critical path of
 # every prompt render. These tests exist to prove it stays quiet and exits 0 on
 # malformed input, not just that the happy path works.
+#
+# Three suites, because there are three things that can break independently:
+# the Rust producer that actually ships, the consumer's pure functions, and the
+# Python prototype the Rust producer was ported from. The cargo suite is the
+# one that covers the installed binary — the Python one exercises the
+# prototype only, and passing it says nothing about what runs in your status
+# line.
 test:
+	@cd statusline && cargo test --quiet
 	@python3 $(TESTS)/test_statusline.py
 	@node $(TESTS)/test_format.mjs
 
