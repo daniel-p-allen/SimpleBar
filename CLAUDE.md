@@ -4,13 +4,14 @@ Project guide for Claude Code. `DESIGN.md` is the source of truth for every
 design decision — if the code and the doc disagree, update the doc first, then
 fix the code. No silent drift.
 
-Nothing is built yet. Milestone M1 is the first piece of code.
+M1–M4 are done: the producer, the window, the file watch and the wheel all
+work. M5 (translucency menu) is the next piece of code.
 
 ## What this is
 
-SimpleBar is a macOS **HUD** — an ordinary 800×800 app window that shows how
-much of the Claude 5-hour session limit is left, as a truck-tyre wheel that
-drains as you use it.
+SimpleBar is a macOS **HUD** — an ordinary resizable app window, opening at
+800×800, that shows how much of the Claude 5-hour session limit is left, as a
+truck-tyre wheel that drains as you use it.
 
 It is **not** a widget. macOS "widget" means WidgetKit, which can't be
 alt-tabbed, can't beep, and won't refresh on demand. Don't drift back toward
@@ -21,25 +22,29 @@ it.
 ```
 src-tauri/     Rust — window, file watching, atomic writes
 src/           webview UI — HTML/CSS/SVG, the wheel and alert logic
-statusline/    the simplebar-statusline producer binary
-tests/         fixtures for the producer
+statusline/    the simplebar-statusline producer binary, and its tests
+tests/         shared fixtures, and the consumer's tests
 scripts/       repo tooling, including check-secrets.sh
 docs/
 ```
 
 ## Commands
 
-`make` is the single entry point, as in the other repos. None of these exist
-yet — they are the agreed contract for M1 onward.
+`make` is the single entry point, as in the other repos. `test`, `check` and
+`clean` exist; the rest are still the agreed contract, not yet written.
 
 ```bash
+make test               # unit tests, both sides            (exists)
+make check              # refuse to ship a committed credential  (exists)
+make clean                                                  # (exists)
 make build              # build both binaries
 make run                # run the app against the current usage.json
-make test               # unit tests, both sides
-make check              # refuse to ship a committed credential
 make install-statusline # wire the producer into ~/.claude/settings.json
-make clean
 ```
+
+Until `make build` and `make run` exist, the app runs via `npx tauri dev` and
+the producer via `cd statusline && cargo build`. Note that `cargo` is not on
+the PATH of a non-interactive shell here — export `~/.cargo/bin` first.
 
 Comment the Makefile the way the other repos do — say *why* a target exists,
 not just what it runs.
