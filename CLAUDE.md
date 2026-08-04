@@ -51,6 +51,11 @@ For development against source without a bundle, the app runs via
 that `cargo` is not on the PATH of a non-interactive shell here — export
 `~/.cargo/bin` first.
 
+There is no frontend dev server: `frontendDist` in `tauri.conf.json` points
+straight at `src/`, and `tauri dev` watches only `src-tauri/`. So edits to the
+webview — HTML, CSS, JS — do not hot-reload. Restart the app to see them, and
+don't conclude a UI change had no effect until you have.
+
 Comment the Makefile the way the other repos do — say *why* a target exists,
 not just what it runs.
 
