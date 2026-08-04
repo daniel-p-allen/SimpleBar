@@ -15,14 +15,38 @@
 
 TESTS := tests
 
-.PHONY: help test test-producer test-app check clean dev-stop
+# Where `tauri build` drops the unsigned bundle. Kept in one place because both
+# `build` (asserts it appeared) and `run` (opens it) name it.
+APP := src-tauri/target/release/bundle/macos/SimpleBar.app
+
+.PHONY: help test test-producer test-app check clean dev-stop build run
 
 # Default target: say what you can do, rather than doing something surprising.
 help:
+	@echo "make build   — build both binaries and the unsigned app bundle"
+	@echo "make run     — build if needed, then open the app"
 	@echo "make test    — run the producer's tests"
 	@echo "make check   — refuse to ship a committed credential"
 	@echo "make dev-stop — stop the dev app and everything it started"
 	@echo "make clean   — remove local build and test artefacts"
+
+# Release build of both halves. The producer (and the install helper beside it)
+# come from the statusline crate; the app bundle comes from `tauri build`. This
+# is an unsigned local build by decision — no Apple Developer account, so no
+# signing or notarization flags. `npm install` runs first because `tauri build`
+# needs the CLI, and a fresh clone will not have it yet.
+build:
+	cargo build --release --manifest-path statusline/Cargo.toml
+	npm install
+	npx tauri build
+
+# Open the built app, building first only if the bundle is absent — so a plain
+# `make run` after a build is instant, but a fresh clone still just works. A
+# shell test rather than a prerequisite because `build` is phony and would
+# otherwise force a rebuild on every run.
+run:
+	@test -d "$(APP)" || $(MAKE) build
+	open "$(APP)"
 
 # The producer runs inside Claude Code's status line, in the critical path of
 # every prompt render. These tests exist to prove it stays quiet and exits 0 on
