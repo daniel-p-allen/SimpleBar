@@ -28,9 +28,10 @@ deferred.
 work: the wheel drains, changes colour at 20% and 10%, and follows the reading
 live while Claude Code runs. It beeps once on each threshold crossing with a
 mute toggle (M6), shows no-data and stale states (M7), and remembers its size
-and position across restarts (M9). What remains is packaging into a `.app`
-bundle (M8). See `DESIGN.md` for the full milestone list — including M5, an
-adjustable-translucency menu, dropped by decision.
+and position across restarts (M9). Packaging (M8) builds an unsigned local
+`.app` and wires the producer in via `make install-statusline`. See `DESIGN.md`
+for the full milestone list — including M5, an adjustable-translucency menu,
+dropped by decision.
 
 ## Requirements
 
@@ -41,21 +42,31 @@ adjustable-translucency menu, dropped by decision.
 - **Xcode Command Line Tools** — Tauri builds the window against them. If you
   don't have them: `xcode-select --install`.
 
-## Build and run
+## Quick start
 
-There's no packaged `.app` yet (that's M8) — for now you run it from source.
+With the requirements above in place:
+
+1. `git clone https://github.com/daniel-p-allen/SimpleBar.git`
+2. `cd SimpleBar`
+3. `make build` — builds the producer, the installer, and an unsigned
+   `SimpleBar.app` (a few minutes the first time).
+4. `make install-statusline` — wires the producer into
+   `~/.claude/settings.json`, backing the file up first.
+5. `make run` — opens the app window.
+6. Use Claude Code. Each status-line render updates the gauge; the window shows
+   "no data yet" until the first one arrives.
+
+The app is **unsigned** — there's no Apple Developer account behind this build,
+so you run your own local build rather than a downloaded, double-clickable app.
+
+## Developing
+
+Run against source without producing a bundle:
 
 ```sh
-git clone https://github.com/daniel-p-allen/SimpleBar.git
-cd SimpleBar
-
 cargo build --manifest-path statusline/Cargo.toml   # the producer
 npm install && npx tauri dev                         # the window
 ```
-
-The first `npx tauri dev` compiles the Rust window, so it takes a few minutes;
-later runs are fast. The window opens showing "no data yet" until you wire the
-producer into Claude Code (below) and run a prompt.
 
 Check your work:
 
@@ -71,15 +82,15 @@ cat tests/fixtures/full.json | statusline/target/debug/simplebar-statusline
 # 35% left · resets 1:00 am
 ```
 
-## Wire it into Claude Code
+## Wiring it by hand
 
-Add to `~/.claude/settings.json` (back up first — this repo doesn't yet ship
-an installer that merges safely with an existing status line):
+`make install-statusline` is the easy path. To do it yourself, add to
+`~/.claude/settings.json` (back up first), pointing at your release binary:
 
 ```json
 "statusLine": {
   "type": "command",
-  "command": "/path/to/SimpleBar/statusline/target/debug/simplebar-statusline"
+  "command": "/path/to/SimpleBar/statusline/target/release/simplebar-statusline"
 }
 ```
 
