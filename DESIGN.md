@@ -3,9 +3,10 @@
 A single-window macOS app that shows how much of your Claude 5-hour session
 limit is left, as a circular gauge that drains as you use it.
 
-Status: M1–M4, M6, M7 and M9 built — producer, window, file watch, wheel,
-beeps, mute, the stale and no-data states, and remembered window geometry.
-M5 dropped by decision. M8 (packaging) is what remains.
+Status: all milestones built — producer, window, file watch, wheel, beeps,
+mute, the stale and no-data states, remembered window geometry, and M8
+packaging (`make build` / `make run` / `make install-statusline`, an unsigned
+local build). M5 was dropped by decision.
 
 ## What it is
 
@@ -379,7 +380,7 @@ Each ships and is verifiable on its own.
 | M6a | Beep on crossing — 50/80/90/95 used | Fires once per crossing, not per update; a burst gives one beep; startup is silent |
 | M6b | Mute toggle — speaker glyph under the model line | Muting survives a restart, via `config.json` |
 | M7 | No-data and stale states | Grey wheel reading "no data yet" before the first write |
-| M8 | Packaging — unsigned `.app` bundle, README, statusLine wiring instructions | Builds and runs on your own Mac via `make run` — **integration checkpoint: real use.** No signing (see "Decisions changed") |
+| M8 ✓ | Packaging — unsigned `.app` bundle, README, statusLine wiring instructions | **Done.** `make build` / `make run` / `make install-statusline` on your own Mac; installer merges into `settings.json` non-destructively. No signing (see "Decisions changed") |
 | M9 | Window size and position remembered | Resize, quit, reopen — the window returns where it was |
 
 M9 needs no new plumbing: `config.json` and its read/write path arrived with

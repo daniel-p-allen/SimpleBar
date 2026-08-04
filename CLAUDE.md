@@ -4,11 +4,11 @@ Project guide for Claude Code. `DESIGN.md` is the source of truth for every
 design decision — if the code and the doc disagree, update the doc first, then
 fix the code. No silent drift.
 
-M1–M4, M6, M7 and M9 are done: the producer, the window, the file watch, the
-wheel, the beeps and mute toggle, the stale and no-data states, and the
-remembered window geometry all work. M5 (adjustable translucency) was dropped
-by decision — see "Decisions changed" in `DESIGN.md`. M8 (packaging) is the
-next and last piece of code, scoped to an unsigned local build — no Apple
+All milestones are done: the producer, the window, the file watch, the wheel,
+the beeps and mute toggle, the stale and no-data states, the remembered window
+geometry, and M8 packaging. M5 (adjustable translucency) was dropped by
+decision — see "Decisions changed" in `DESIGN.md`. M8 is an unsigned local
+build (`make build` / `make run` / `make install-statusline`) — no Apple
 Developer account, so no signing, notarization or clean-Mac distribution.
 
 ## What this is
@@ -33,22 +33,21 @@ scripts/       repo tooling, including check-secrets.sh
 
 ## Commands
 
-`make` is the single entry point, as in the other repos. `test`, `check`,
-`clean` and `dev-stop` exist; `build`, `run` and `install-statusline` are the
-agreed contract, arriving with M8 packaging, not yet written.
+`make` is the single entry point, as in the other repos. All targets exist.
 
 ```bash
-make test               # unit tests, both sides            (exists)
-make check              # refuse to ship a committed credential  (exists)
-make clean                                                  # (exists)
-make dev-stop           # stop the dev app and everything it started (exists)
-make build              # build both binaries               (M8)
-make run                # run the app against the current usage.json (M8)
-make install-statusline # wire the producer into ~/.claude/settings.json (M8)
+make build              # build both binaries and the unsigned .app
+make run                # build if needed, then open the app
+make install-statusline # wire the producer into ~/.claude/settings.json
+make test               # unit tests, both sides
+make check              # refuse to ship a committed credential
+make dev-stop           # stop the dev app and everything it started
+make clean              # remove local build and test artefacts
 ```
 
-Until `make build` and `make run` exist, the app runs via `npx tauri dev` and
-the producer via `cargo build --manifest-path statusline/Cargo.toml`. Note
+For development against source without a bundle, the app runs via
+`npx tauri dev` and the producer via
+`cargo build --manifest-path statusline/Cargo.toml`. Note
 that `cargo` is not on the PATH of a non-interactive shell here — export
 `~/.cargo/bin` first.
 
