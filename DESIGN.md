@@ -467,6 +467,23 @@ visible to whoever reads this next.
   it: stretch the window instead of true-fullscreening the terminal, and the
   pin works.
 
+- **The unmute toggle confirms itself with a tone — added 2026-08-05.** M6b
+  left the mute button silent in both directions, which makes unmuting an act
+  of faith: nothing happens until the next threshold is crossed, which may be
+  hours away, so a broken audio path is indistinguishable from a quiet
+  session. Unmuting now plays a short tone as its own confirmation.
+
+  **Only unmuting sounds.** A tone confirming that the app has just been
+  silenced contradicts the request, and mute-on is precisely the moment the
+  user has asked for quiet. Unmute-only still carries the whole signal, since
+  the tone is the evidence that audio works and is on.
+
+  The tone is deliberately *not* the alert beep. Same oscillator, but quieter
+  and half the length (0.08 gain, 0.12s, against the alert's 0.15 and 0.25s),
+  so a threshold crossing stays distinguishable from a button press. An alert
+  the user has been trained to hear as "I clicked something" is worse than no
+  alert at all.
+
 ## Open, to follow up
 
 - **Lighter ticks in light mode — done by preference, 2026-08-04.** Dan

@@ -68,7 +68,11 @@ let audio = null;
 
 /// A short tone. Deliberately synthesised rather than bundled: no asset to
 /// ship, and nothing to load before the first beep can sound.
-function beep() {
+///
+/// `peak` and `seconds` exist so the unmute confirmation can borrow the same
+/// oscillator while staying audibly distinct from an alert — see `tone` calls
+/// below for which is which.
+function beep(peak = 0.15, seconds = 0.25) {
   audio ??= new AudioContext();
 
   const osc = audio.createOscillator();
@@ -80,11 +84,18 @@ function beep() {
   // ends on a click, which sounds like a fault rather than a notification.
   const now = audio.currentTime;
   gain.gain.setValueAtTime(0, now);
-  gain.gain.linearRampToValueAtTime(0.15, now + 0.01);
-  gain.gain.linearRampToValueAtTime(0, now + 0.25);
+  gain.gain.linearRampToValueAtTime(peak, now + 0.01);
+  gain.gain.linearRampToValueAtTime(0, now + seconds);
 
   osc.start(now);
-  osc.stop(now + 0.25);
+  osc.stop(now + seconds);
+}
+
+/// The tone that confirms unmuting. Quieter and shorter than the alert on
+/// purpose: a threshold crossing must never sound like a button press, or the
+/// user learns to hear the alert as something they caused.
+function confirmTone() {
+  beep(0.08, 0.12);
 }
 
 // Null until the first reading. initialAlertState then takes that reading as
@@ -114,6 +125,11 @@ async function toggleMute() {
     const config = await invoke("set_muted", { muted: !muted });
     muted = config.muted;
     renderMute();
+
+    // Only unmuting sounds. A tone acknowledging that the app has just been
+    // silenced argues with the request; unmuting, on the other hand, has no
+    // other confirmation until the next crossing, which may be hours away.
+    if (!muted) confirmTone();
   } catch (err) {
     // Leave the glyph showing what is actually stored. The alternative — a
     // glyph that lies — is worse than a click that appears not to work.
