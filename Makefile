@@ -1,14 +1,17 @@
 # SimpleBar — repository tasks
 #
-# One entry point, as in the other repos. The project is at M1, so only the
-# producer exists and only its targets are real. `build` and `run` arrive with
-# the Tauri app at M2; `install-statusline` with the installer milestone. They
-# are left out rather than stubbed, because a target that exists but does
-# nothing is worse than one that isn't there.
+# One entry point, as in the other repos. M1–M4, M6, M7 and M9 are built —
+# the producer, the window, the file watch, the wheel, the alerts and the
+# remembered window geometry. Only the targets below are real. `build`, `run`
+# and `install-statusline` arrive with packaging (M8): they are left out
+# rather than stubbed, because a target that exists but does nothing is worse
+# than one that isn't there.
 #
-#   scripts/   the producer, plus repository tooling
-#   tests/     fixtures and tests for the producer
-#   docs/
+#   statusline/  the producer binary, plus its tests
+#   src-tauri/   the app's Rust side — window, file watching
+#   src/         the webview UI — HTML/CSS/SVG, the wheel
+#   scripts/     repository tooling (check-secrets.sh, dev-stop.sh)
+#   tests/       shared fixtures and the consumer's tests
 
 TESTS := tests
 

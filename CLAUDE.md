@@ -4,9 +4,12 @@ Project guide for Claude Code. `DESIGN.md` is the source of truth for every
 design decision — if the code and the doc disagree, update the doc first, then
 fix the code. No silent drift.
 
-M1–M4 are done: the producer, the window, the file watch and the wheel all
-work. M5 (adjustable translucency) was dropped by decision — see "Decisions
-changed" in `DESIGN.md`. M6 (alerts) is the next piece of code.
+M1–M4, M6, M7 and M9 are done: the producer, the window, the file watch, the
+wheel, the beeps and mute toggle, the stale and no-data states, and the
+remembered window geometry all work. M5 (adjustable translucency) was dropped
+by decision — see "Decisions changed" in `DESIGN.md`. M8 (packaging) is the
+next and last piece of code, scoped to an unsigned local build — no Apple
+Developer account, so no signing, notarization or clean-Mac distribution.
 
 ## What this is
 
@@ -26,26 +29,28 @@ src/           webview UI — HTML/CSS/SVG, the wheel and alert logic
 statusline/    the simplebar-statusline producer binary, and its tests
 tests/         shared fixtures, and the consumer's tests
 scripts/       repo tooling, including check-secrets.sh
-docs/
 ```
 
 ## Commands
 
-`make` is the single entry point, as in the other repos. `test`, `check` and
-`clean` exist; the rest are still the agreed contract, not yet written.
+`make` is the single entry point, as in the other repos. `test`, `check`,
+`clean` and `dev-stop` exist; `build`, `run` and `install-statusline` are the
+agreed contract, arriving with M8 packaging, not yet written.
 
 ```bash
 make test               # unit tests, both sides            (exists)
 make check              # refuse to ship a committed credential  (exists)
 make clean                                                  # (exists)
-make build              # build both binaries
-make run                # run the app against the current usage.json
-make install-statusline # wire the producer into ~/.claude/settings.json
+make dev-stop           # stop the dev app and everything it started (exists)
+make build              # build both binaries               (M8)
+make run                # run the app against the current usage.json (M8)
+make install-statusline # wire the producer into ~/.claude/settings.json (M8)
 ```
 
 Until `make build` and `make run` exist, the app runs via `npx tauri dev` and
-the producer via `cd statusline && cargo build`. Note that `cargo` is not on
-the PATH of a non-interactive shell here — export `~/.cargo/bin` first.
+the producer via `cargo build --manifest-path statusline/Cargo.toml`. Note
+that `cargo` is not on the PATH of a non-interactive shell here — export
+`~/.cargo/bin` first.
 
 Comment the Makefile the way the other repos do — say *why* a target exists,
 not just what it runs.
