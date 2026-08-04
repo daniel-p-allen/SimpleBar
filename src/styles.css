@@ -157,8 +157,17 @@ body {
    load-bearing, since it is what explains why the app has gone quiet, and a
    mute set last week must not be a mystery. The plain speaker carries no news
    — sound is on, which is the default — so it recedes. */
-#mute {
+/* Mute and pin on one row. The gap is roughly a button's own width, so the
+   two controls read as separate targets rather than a single cluster. */
+#controls {
   margin-top: 1vmin;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3.4vmin;
+}
+
+#mute {
   padding: 0.6vmin;
   border: none;
   background: none;
@@ -183,6 +192,56 @@ body {
    the window, and an invisible focus ring would make it unreachable in
    practice for anyone not using a mouse (WCAG 2.4.7). */
 #mute:focus-visible {
+  opacity: 1;
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* The pin button. Same chrome-stripped shape as mute, but state is shown by
+   colour rather than opacity: green when pinned (go), red when not, reusing
+   the wheel's band palette so the two greens and reds match. Kept near full
+   opacity so the colour actually reads. */
+#pin {
+  padding: 0.6vmin;
+  border: none;
+  background: none;
+  line-height: 0;
+  cursor: pointer;
+  opacity: 0.85;
+  color: var(--band-critical);
+  transition: opacity 150ms ease, color 150ms ease;
+}
+
+#pin-glyph {
+  width: 2.6vmin;
+  height: 2.6vmin;
+  display: block;
+}
+
+/* Pinned: green, and the slash is dropped — a clean pin means "on top". */
+#pin[aria-pressed="true"] {
+  color: var(--band-normal);
+}
+
+#pin[aria-pressed="true"] .pin-slash {
+  display: none;
+}
+
+/* The diagonal slash, shown in the unpinned (default) state. Colour is not the
+   only signal (WCAG 1.4.1): a red-green colourblind user reads the slash, not
+   the hue. Takes the button's current colour so it sits on the red pin. */
+.pin-slash {
+  stroke: currentColor;
+  stroke-width: 2.5;
+  stroke-linecap: round;
+}
+
+#pin:hover {
+  opacity: 1;
+}
+
+#pin:focus-visible {
   opacity: 1;
   outline: 2px solid currentColor;
   outline-offset: 2px;

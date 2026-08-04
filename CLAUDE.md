@@ -89,8 +89,10 @@ account-wide figures — they already include claude.ai and mobile usage.
   while Claude Code is running. `written_at` exists so the UI can say "as of
   14:02".
 - **Beeps fire once per threshold crossing**, not once per update.
-- **Stage 1 is macOS only.** No server, no mobile, no tray icon, no
-  always-on-top. Those are later stages and are out of scope.
+- **Stage 1 is macOS only.** No server, no mobile, no tray icon. Those are
+  later stages and are out of scope. (Always-on-top was originally excluded
+  here too, then added in fine-tuning as an opt-in toggle — see "Always-on-top
+  toggle" in `DESIGN.md`.)
 
 ## Testing
 

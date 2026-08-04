@@ -40,9 +40,33 @@
           state, so the glyph is decoration to a screen reader rather than
           something it has to interpret.
         -->
-        <button id="mute" type="button" aria-pressed="false">
-          <span id="mute-glyph" aria-hidden="true">🔊</span>
-        </button>
+        <!-- The two controls sit side by side, mute then pin, separated by a
+             gap about a button wide so neither is misclicked for the other. -->
+        <div id="controls">
+          <button id="mute" type="button" aria-pressed="false">
+            <span id="mute-glyph" aria-hidden="true">🔊</span>
+          </button>
+          <!--
+            Pin on top. Same button contract as mute. The glyph is an inline
+            SVG (not an emoji) so the stylesheet can colour it — green when
+            pinned, red when not — and the slash line is shown only in the
+            unpinned state, so the toggle reads without relying on colour alone.
+          -->
+          <button id="pin" type="button" aria-pressed="false">
+            <svg id="pin-glyph" viewBox="0 0 24 24" aria-hidden="true">
+              <!-- A pushpin, filled with the button's current colour. -->
+              <path
+                d="M9 2h6l-1 6 3 3v2h-4v6l-1 2-1-2v-6H6v-2l3-3z"
+                fill="currentColor"
+              />
+              <!-- Slash across the pin — visible only when unpinned. -->
+              <line
+                class="pin-slash"
+                x1="4" y1="20" x2="20" y2="4"
+              />
+            </svg>
+          </button>
+        </div>
       </div>
     </div>
   </body>
