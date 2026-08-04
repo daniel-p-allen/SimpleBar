@@ -1,26 +1,47 @@
 # SimpleBar
 
-**A visual usage monitor for Claude Code.** See how much of your Claude
-5-hour session limit is left, without asking.
+**A companion app for Claude Code that turns your usage into a visual you can
+glance at.** See how much of your Claude 5-hour session limit is left, without
+asking.
 
-SimpleBar is a macOS HUD — an ordinary resizable window, not a WidgetKit
-widget — that draws your remaining session limit as a circular gauge and
-drains it as you use it. The number is account-wide: it already includes
-claude.ai and mobile usage, not just this machine.
+SimpleBar is not a standalone tool — it a partner to Claude Code. Claude Code
+already knows your remaining session limit and can hand it to a status-line
+command; SimpleBar takes that same number and expands it into a macOS HUD, a
+circular gauge that drains as you use it and can be pinned above your editor.
+The number is account-wide: it already includes claude.ai and mobile usage, not
+just this machine.
 
+> **Scope: Claude Code CLI, for now.** SimpleBar currently reads from the Claude
+> Code command-line tool's status-line feature. Support for other Claude
+> surfaces is planned for later — see `DESIGN.md`.
+
+## How it fits together
+
+```mermaid
+flowchart LR
+  CC["Claude Code CLI<br/>(the tool you already use)"]
+  P["simplebar-statusline<br/>(producer binary)"]
+  U[("usage.json<br/>~/.local/state/simplebar")]
+  A["SimpleBar<br/>(Tauri HUD window)"]
+
+  CC -- "status-line JSON on stdin<br/>used %, resets_at, model" --> P
+  P -- "atomic write" --> U
+  U -- "file watch" --> A
+
+  classDef ext fill:#4f86b8,stroke:#2f5f88,color:#fff;
+  classDef own fill:#2e9e4f,stroke:#1c6a34,color:#fff;
+  classDef file fill:#d98c1f,stroke:#9a6212,color:#fff;
+  class CC ext;
+  class P,A own;
+  class U file;
 ```
-Claude Code ──stdin JSON──▶ simplebar-statusline ──▶ usage.json
-                                                          │ file watch
-                                                          ▼
-                                                  SimpleBar (Tauri)
-```
 
-No credentials, no network calls. Claude Code's `statusLine` feature already
-hands a status-line command the numbers it needs
-(`rate_limits.five_hour.used_percentage`, `resets_at`) on stdin — SimpleBar
-just writes them to a file and watches it. See `DESIGN.md` for the full
-reasoning, including why the OAuth-endpoint alternative was deliberately
-deferred.
+Claude Code invokes the producer as its `statusLine` command and pipes it the
+numbers it already has (`rate_limits.five_hour.used_percentage`, `resets_at`)
+on stdin. The producer writes them to a file; the HUD watches that file. **No
+credentials, no network calls** — SimpleBar never talks to any API. See
+`DESIGN.md` for the full reasoning, including why the OAuth-endpoint alternative
+was deliberately deferred.
 
 ## Status
 
@@ -29,9 +50,9 @@ work: the wheel drains, changes colour at 20% and 10%, and follows the reading
 live while Claude Code runs. It beeps once on each threshold crossing with a
 mute toggle (M6), shows no-data and stale states (M7), and remembers its size
 and position across restarts (M9). Packaging (M8) builds an unsigned local
-`.app` and wires the producer in via `make install-statusline`. See `DESIGN.md`
-for the full milestone list — including M5, an adjustable-translucency menu,
-dropped by decision.
+`.app` and wires the producer in via `make install-statusline`. A pin toggle
+floats the window above other apps. See `DESIGN.md` for the full milestone
+list — including M5, an adjustable-translucency menu, dropped by decision.
 
 ## Requirements
 
