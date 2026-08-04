@@ -12,8 +12,9 @@ name: checks
 # own and `producer` still reports honestly.
 
 on:
+  # Every push, on every branch — the secret scan is a hard rule and must not
+  # wait for a pull request to exist.
   push:
-    branches: [main]
   pull_request:
   workflow_dispatch:
 
@@ -39,7 +40,7 @@ jobs:
           node-version: '20'
 
       - name: No credentials in the repository
-        run: ./scripts/check-secrets.sh
+        run: make check
 
       # Not `make test`: that includes the app's Rust tests, which need the
       # system webview and GTK. This job is deliberately dependency-free.
