@@ -11,6 +11,8 @@ circular gauge that drains as you use it and can be pinned above your editor.
 The number is account-wide: it already includes claude.ai and mobile usage, not
 just this machine.
 
+![SimpleBar's circular gauge pinned over a terminal running Claude Code, showing 25% of the session left before it resets](assets/simplebar-over-claude-code.png)
+
 > **Scope: Claude Code CLI, for now.** SimpleBar currently reads from the Claude
 > Code command-line tool's status-line feature. Support for other Claude
 > surfaces is planned for later — see `DESIGN.md`.
@@ -42,6 +44,12 @@ on stdin. The producer writes them to a file; the HUD watches that file. **No
 credentials, no network calls** — SimpleBar never talks to any API. See
 `DESIGN.md` for the full reasoning, including why the OAuth-endpoint alternative
 was deliberately deferred.
+
+The window is ~95% transparent, so it reads over whatever is behind it — here
+the Claude Code session shows through the gauge. The two controls under the
+reading mute the alert beeps and pin the window on top.
+
+![Close-up of the translucent SimpleBar gauge with the terminal visible through it, showing the mute and green pin controls](assets/simplebar-translucency.png)
 
 ## Status
 
