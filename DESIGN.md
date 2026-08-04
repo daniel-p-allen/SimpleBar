@@ -23,7 +23,9 @@ whole job is to display one live number. It opens at 800×800.
   The floor exists because below roughly 300 the reading stops being
   readable, and a HUD that can be dragged down to an illegible smudge is a
   worse default than one that refuses.
-- On screen, coverable by other windows, alt-tabbable. Not always-on-top.
+- On screen, coverable by other windows, alt-tabbable. Not always-on-top by
+  default, but pinnable via a toggle — see "Always-on-top toggle" under
+  decisions changed.
 - Fixed translucency: the window background is ~95% see-through, set in the
   stylesheet. Not adjustable — see "Adjustable translucency" under decisions
   changed.
@@ -434,6 +436,36 @@ visible to whoever reads this next.
   developer" warning on download, so it would owe a right-click-to-open note
   in the README. This is why the M8 acceptance is "runs on your own Mac", not
   the old "installs on a clean account".
+
+- **Always-on-top toggle — added 2026-08-04.** Stage 1 originally ruled out
+  always-on-top ("later stages"), on the view that a HUD should sit among your
+  windows and be alt-tabbed to, not hover over everything. Reversed in
+  fine-tuning: a drain gauge you glance at is exactly the kind of thing some
+  people want pinned above their editor, and the cost is small because the
+  mute toggle (M6b) already established the whole pattern — a glyph button, a
+  Tauri command, and a field persisted to `config.json` and restored on
+  launch. It stays **off by default**, so the original default is unchanged;
+  pinning is opt-in and remembered. Implemented by cloning the mute toggle,
+  calling `WebviewWindow::set_always_on_top`.
+
+  The control is a single SVG pin (not an emoji, so CSS can colour it), sat
+  beside the mute button. State is shown two ways, so it survives colour
+  blindness: **colour** — green (`--band-normal`) when pinned, red
+  (`--band-critical`) when not — reusing the wheel's existing palette; and
+  **shape** — a diagonal slash through the pin when unpinned, cleared when
+  pinned, the universal "off" cue. `aria-pressed` carries the state to screen
+  readers.
+
+  Pinning is a single `set_always_on_top`, and its reach is deliberately
+  limited. It floats above ordinary windows, including one dragged out to fill
+  the whole screen. It does **not** appear over another app's *native*-fullscreen
+  Space (the green-button/⌃⌘F kind that swipes as its own desktop). That was
+  attempted and rolled back: macOS only lets an accessory (Dock-less) app or a
+  nonactivating `NSPanel` intrude on another app's fullscreen Space, and the
+  route there — an `objc2-app-kit` FFI setting `FullScreenAuxiliary` and a raised
+  window level — still failed without also giving up the Dock icon. Not worth
+  it: stretch the window instead of true-fullscreening the terminal, and the
+  pin works.
 
 ## Open, to follow up
 

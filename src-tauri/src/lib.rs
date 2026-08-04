@@ -63,6 +63,13 @@ struct Config {
     #[serde(default)]
     muted: bool,
 
+    /// Whether the window floats above other apps. Off by default — the HUD
+    /// sits among your windows unless you pin it. Persists like `muted`: a
+    /// pin set today is still set tomorrow, and the glyph shows the state so
+    /// it is never a mystery.
+    #[serde(default)]
+    pinned: bool,
+
     /// Absent until the window has been moved or resized once, and absent
     /// again if the stored value was unusable.
     ///
@@ -142,6 +149,36 @@ fn write_config(config: &Config) -> Result<(), String> {
 #[tauri::command]
 fn set_muted(muted: bool) -> Result<Config, String> {
     let config = Config { muted, ..read_config() };
+    write_config(&config)?;
+    Ok(config)
+}
+
+/// Pins or unpins the window on top of other apps, then persists the choice.
+///
+/// Takes the window because always-on-top is a property of the live window,
+/// not just a stored flag — the UI must see it change now, and the config is
+/// so the next launch restores it. Applied before the write: a failed
+/// set_always_on_top should not leave a `pinned: true` on disk that the window
+/// does not actually honour.
+/// Pins or unpins the window on top of other apps, then persists the choice.
+///
+/// Takes the window because always-on-top is a property of the live window,
+/// not just a stored flag — the UI must see it change now, and the config is
+/// so the next launch restores it. Applied before the write: a failed
+/// set_always_on_top should not leave a `pinned: true` on disk that the window
+/// does not actually honour.
+///
+/// Floats above ordinary windows, including one stretched to fill the screen.
+/// It deliberately does *not* try to cross into another app's native-fullscreen
+/// Space: macOS only lets accessory (Dock-less) apps or nonactivating panels do
+/// that, and neither is worth becoming for this. See "Always-on-top toggle" in
+/// DESIGN.md.
+#[tauri::command]
+fn set_pinned(window: tauri::WebviewWindow, pinned: bool) -> Result<Config, String> {
+    window
+        .set_always_on_top(pinned)
+        .map_err(|e| e.to_string())?;
+    let config = Config { pinned, ..read_config() };
     write_config(&config)?;
     Ok(config)
 }
@@ -374,11 +411,20 @@ pub fn run() {
 
             if let Some(window) = app.get_webview_window("main") {
                 restore_geometry(&window);
+                // A window pinned last session comes back pinned. Best-effort,
+                // like the geometry: failing to re-pin is not worth refusing to
+                // open over.
+                let _ = window.set_always_on_top(read_config().pinned);
                 spawn_geometry_saver(window);
             }
             Ok(())
         })
-        .invoke_handler(tauri::generate_handler![read_usage, read_config, set_muted])
+        .invoke_handler(tauri::generate_handler![
+            read_usage,
+            read_config,
+            set_muted,
+            set_pinned
+        ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
@@ -390,13 +436,13 @@ mod tests {
     #[test]
     fn a_missing_key_defaults_to_unmuted() {
         // A config written before `muted` existed, or hand-edited.
-        assert_eq!(config_from_str("{}"), Config { muted: false, window: None });
+        assert_eq!(config_from_str("{}"), Config { muted: false, pinned: false, window: None });
     }
 
     #[test]
     fn the_stored_value_is_honoured() {
-        assert_eq!(config_from_str(r#"{"muted":true}"#), Config { muted: true, window: None });
-        assert_eq!(config_from_str(r#"{"muted":false}"#), Config { muted: false, window: None });
+        assert_eq!(config_from_str(r#"{"muted":true}"#), Config { muted: true, pinned: false, window: None });
+        assert_eq!(config_from_str(r#"{"muted":false}"#), Config { muted: false, pinned: false, window: None });
     }
 
     #[test]
@@ -414,7 +460,25 @@ mod tests {
         // A newer build's config must not stop an older build from reading the
         // keys it does understand.
         let raw = r#"{"muted":true,"future_setting":"x"}"#;
-        assert_eq!(config_from_str(raw), Config { muted: true, window: None });
+        assert_eq!(config_from_str(raw), Config { muted: true, pinned: false, window: None });
+    }
+
+    #[test]
+    fn pinned_defaults_to_off_and_is_honoured_when_set() {
+        // A config from before `pinned` existed reads as unpinned — the HUD
+        // must not start floating over everything on upgrade.
+        assert!(!config_from_str("{}").pinned, "unpinned by default");
+        assert!(config_from_str(r#"{"pinned":true}"#).pinned);
+        assert!(!config_from_str(r#"{"pinned":false}"#).pinned);
+    }
+
+    #[test]
+    fn pinned_and_muted_are_independent() {
+        // Each toggle round-trips without disturbing the other.
+        let c = config_from_str(r#"{"muted":true,"pinned":true}"#);
+        assert!(c.muted && c.pinned);
+        let c = config_from_str(r#"{"muted":false,"pinned":true}"#);
+        assert!(!c.muted && c.pinned);
     }
 
     #[test]

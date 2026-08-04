@@ -127,6 +127,21 @@ export function muteButton(muted) {
   };
 }
 
+/// How the pin button should present itself.
+///
+/// The glyph is a fixed SVG pin in the markup; state is carried two visible
+/// ways the stylesheet keys off `aria-pressed` — colour (green pinned, red
+/// not) and a diagonal slash shown only when unpinned. Colour alone would be
+/// invisible to a red-green colourblind user, so the slash is the redundant
+/// cue. The label names the *action*, like the mute button, and `pressed`
+/// carries the state to screen readers.
+export function pinButton(pinned) {
+  return {
+    label: pinned ? "Unpin from top" : "Pin on top",
+    pressed: pinned ? "true" : "false",
+  };
+}
+
 /// Epoch seconds → "1:00 am", "10:00 pm".
 ///
 /// The locale is pinned to en-US rather than the system's, because DESIGN.md

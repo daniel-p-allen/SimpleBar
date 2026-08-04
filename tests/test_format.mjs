@@ -18,6 +18,7 @@ import {
   formatResetTime,
   modelLabel,
   muteButton,
+  pinButton,
   remainingPercent,
 } from "../src/format.js";
 
@@ -114,6 +115,14 @@ check("aria-pressed is false when unmuted", muteButton(false).pressed, "false");
 check("aria-pressed is true when muted", muteButton(true).pressed, "true");
 // Glyphs must differ, or the only visual signal of state disappears.
 check("the two glyphs differ", muteButton(false).glyph !== muteButton(true).glyph, true);
+
+console.log("test_pin_button");
+// Like mute, the label names the action; state rides on aria-pressed, and the
+// colour/slash are the stylesheet's job keyed off it.
+check("unpinned label names the action", pinButton(false).label, "Pin on top");
+check("pinned label names the action", pinButton(true).label, "Unpin from top");
+check("aria-pressed is false when unpinned", pinButton(false).pressed, "false");
+check("aria-pressed is true when pinned", pinButton(true).pressed, "true");
 
 if (failures.length) {
   console.log(`\n${failures.length} failed`);

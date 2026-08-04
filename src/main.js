@@ -5,6 +5,7 @@ import {
   isStale,
   modelLabel,
   muteButton,
+  pinButton,
   remainingPercent,
 } from "./format.js";
 import { initialAlertState, nextAlertState } from "./alerts.js";
@@ -120,6 +121,33 @@ async function toggleMute() {
   }
 }
 
+// Mirrors config.json, like `muted`. Read once at startup; the Rust side owns
+// the file and applying the setting to the live window.
+let pinned = false;
+
+function renderPin() {
+  const { label, pressed } = pinButton(pinned);
+  const button = document.querySelector("#pin");
+  button.setAttribute("aria-label", label);
+  // The stylesheet keys the colour and the slash off aria-pressed, so setting
+  // it here is all the visual state the button needs.
+  button.setAttribute("aria-pressed", pressed);
+}
+
+/// Flips always-on-top. Saved before drawn, for the reason toggleMute is.
+///
+/// The Rust command both moves the live window and persists the choice, so on
+/// success the returned config is the source of truth for the glyph.
+async function togglePin() {
+  try {
+    const config = await invoke("set_pinned", { pinned: !pinned });
+    pinned = config.pinned;
+    renderPin();
+  } catch (err) {
+    console.error("could not save pin setting:", err);
+  }
+}
+
 // The last reading received, kept so the staleness timer can re-draw without
 // waiting for a write that may never come.
 let lastUsage = null;
@@ -174,10 +202,16 @@ window.addEventListener("DOMContentLoaded", async () => {
   await listen("usage-changed", (event) => update(event.payload));
 
   // Before the first reading, so a threshold crossed by that reading cannot
-  // beep while the app still believes it is unmuted.
-  muted = (await invoke("read_config")).muted;
+  // beep while the app still believes it is unmuted. One read serves both
+  // toggles. The Rust side has already applied the pin to the live window at
+  // startup; this only brings the glyph into line with it.
+  const config = await invoke("read_config");
+  muted = config.muted;
+  pinned = config.pinned;
   renderMute();
+  renderPin();
   document.querySelector("#mute").addEventListener("click", toggleMute);
+  document.querySelector("#pin").addEventListener("click", togglePin);
 
   try {
     update(await invoke("read_usage"));
