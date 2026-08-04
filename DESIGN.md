@@ -379,7 +379,7 @@ Each ships and is verifiable on its own.
 | M6a | Beep on crossing — 50/80/90/95 used | Fires once per crossing, not per update; a burst gives one beep; startup is silent |
 | M6b | Mute toggle — speaker glyph under the model line | Muting survives a restart, via `config.json` |
 | M7 | No-data and stale states | Grey wheel reading "no data yet" before the first write |
-| M8 | Packaging — `.app` bundle, README, statusLine wiring instructions | Installs on a clean account — **integration checkpoint: real use** |
+| M8 | Packaging — unsigned `.app` bundle, README, statusLine wiring instructions | Builds and runs on your own Mac via `make run` — **integration checkpoint: real use.** No signing (see "Decisions changed") |
 | M9 | Window size and position remembered | Resize, quit, reopen — the window returns where it was |
 
 M9 needs no new plumbing: `config.json` and its read/write path arrived with
@@ -423,24 +423,38 @@ visible to whoever reads this next.
   `config.json` survives as the home for the M6 mute toggle, now its only
   setting.
 
+- **Packaging stays unsigned — decided 2026-08-04.** M8 will produce an
+  unsigned local `.app` via `tauri build`, nothing more. No paid Apple
+  Developer account is in play, so code signing, notarization, and a build
+  that opens cleanly on someone else's Mac are all out of scope — anything
+  requiring the certificate is removed rather than stubbed. The repo ships as
+  **source**: people clone and `make run`. An unsigned binary can be attached
+  to a GitHub Release later, but it triggers Gatekeeper's "unidentified
+  developer" warning on download, so it would owe a right-click-to-open note
+  in the README. This is why the M8 acceptance is "runs on your own Mac", not
+  the old "installs on a clean account".
+
 ## Open, to follow up
 
-- **White ticks in both modes.** Dan's preference, 2026-08-03: the grey ticks
-  read as drab and the dark-mode face looks best. Not done yet because light
-  mode is where it bites — white ticks over a light desktop are invisible
-  (1.05:1), which is why they are near-black there today. Doing it properly
-  means giving the ticks a background they can rely on rather than the
-  desktop: extending the backdrop disc under the ring, or outlining the ticks.
-  Ties into the contrast item below.
+- **Lighter ticks in light mode — done by preference, 2026-08-04.** Dan
+  disliked the near-black (`#2b2b2b`) ticks, so light-mode `--ticks` is now
+  `#d9d9d9`, matching the backdrop-disc grey. The dark-mode ticks are
+  unchanged. The contrast tradeoff below was raised and consciously accepted:
+  against a light desktop these ticks can drop under 3:1. Doing it *properly*
+  (rather than by taste) would still mean giving the ticks a background they
+  can rely on rather than the desktop — extending the backdrop disc under the
+  ring, or outlining the ticks — but that is deferred, not planned.
 
 - **The contrast claim is not currently true.** "Standards adopted" cites WCAG
   1.4.11 (3:1 for non-text), and measured against the two extremes a
-  95%-transparent window can sit on, most strokes fail: light ticks 1.48:1 on
-  black, dark ticks 1.56:1 on white, amber 2.72:1 on white. This is structural
-  rather than a bad colour pick — no single colour clears 3:1 against both a
-  white and a black desktop. Either give the strokes a known background, or
-  narrow the claim to say contrast is guaranteed only within the backdrop
-  disc, where the text lives.
+  95%-transparent window can sit on, most strokes fail: light-mode ticks are
+  now `#d9d9d9` (~1.2:1 on a white desktop), dark-mode ticks 1.48:1 on black,
+  amber 2.72:1 on white. This is structural rather than a bad colour pick — no
+  single colour clears 3:1 against both a white and a black desktop, and the
+  2026-08-04 preference change traded the light-mode ticks further away from
+  the target on purpose. Either give the strokes a known background, or narrow
+  the claim to say contrast is guaranteed only within the backdrop disc, where
+  the text lives.
 
 ## Ideas parked for later
 

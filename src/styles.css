@@ -11,7 +11,11 @@
   --text: #0f0f0f;
   --window: rgba(246, 246, 246, 0.05);
   --backdrop: rgba(217, 217, 217, 0.85);
-  --ticks: #2b2b2b;
+  /* Matched to the backdrop grey by preference. Note this is lighter than the
+     WCAG 1.4.11 follow-up wants: the ticks sit outside the backdrop disc on a
+     95%-transparent window, so against a light desktop they can drop below the
+     3:1 non-text contrast the track colour is chosen to hold. */
+  --ticks: #d9d9d9;
   --track: #9a9a9a;
   --band-normal: #2e9e4f;
   --band-low: #d98c1f;
