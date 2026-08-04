@@ -157,21 +157,22 @@ body {
    load-bearing, since it is what explains why the app has gone quiet, and a
    mute set last week must not be a mystery. The plain speaker carries no news
    — sound is on, which is the default — so it recedes. */
-/* Mute and pin on one row. The gap is roughly a button's own width, so the
-   two controls read as separate targets rather than a single cluster. */
+/* Mute and pin on one row. The gap is about half a button's width — enough
+   that the two read as separate targets, without the glyphs (deliberately
+   large) drifting apart into two unrelated controls. */
 #controls {
   margin-top: 1vmin;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 3.4vmin;
+  gap: 2vmin;
 }
 
 #mute {
   padding: 0.6vmin;
   border: none;
   background: none;
-  font-size: 2.4vmin;
+  font-size: 3.84vmin;
   line-height: 1;
   cursor: pointer;
   opacity: 0.5;
@@ -214,8 +215,8 @@ body {
 }
 
 #pin-glyph {
-  width: 2.6vmin;
-  height: 2.6vmin;
+  width: 5.2vmin;
+  height: 5.2vmin;
   display: block;
 }
 
