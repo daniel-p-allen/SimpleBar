@@ -19,12 +19,13 @@ TESTS := tests
 # `build` (asserts it appeared) and `run` (opens it) name it.
 APP := src-tauri/target/release/bundle/macos/SimpleBar.app
 
-.PHONY: help test test-producer test-app check clean dev-stop build run
+.PHONY: help test test-producer test-app check clean dev-stop build run install-statusline
 
 # Default target: say what you can do, rather than doing something surprising.
 help:
 	@echo "make build   — build both binaries and the unsigned app bundle"
 	@echo "make run     — build if needed, then open the app"
+	@echo "make install-statusline — wire the producer into ~/.claude/settings.json"
 	@echo "make test    — run the producer's tests"
 	@echo "make check   — refuse to ship a committed credential"
 	@echo "make dev-stop — stop the dev app and everything it started"
@@ -47,6 +48,14 @@ build:
 run:
 	@test -d "$(APP)" || $(MAKE) build
 	open "$(APP)"
+
+# Wire the producer into ~/.claude/settings.json. The installer is a sibling
+# binary built alongside the producer, so it needs the release build first;
+# building only the statusline crate rather than the whole app keeps it quick
+# when the user only wants the status line, not the window.
+install-statusline:
+	cargo build --release --manifest-path statusline/Cargo.toml
+	./statusline/target/release/simplebar-install
 
 # The producer runs inside Claude Code's status line, in the critical path of
 # every prompt render. These tests exist to prove it stays quiet and exits 0 on
