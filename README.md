@@ -62,7 +62,42 @@ and position across restarts (M9). Packaging (M8) builds an unsigned local
 floats the window above other apps. See `DESIGN.md` for the full milestone
 list — including M5, an adjustable-translucency menu, dropped by decision.
 
-## Requirements
+The app now installs itself: the `.app` carries the producer inside it, and a
+**Connect to Claude Code** button copies it to `~/.local/bin/` and registers it,
+so using SimpleBar no longer needs a terminal or a checkout.
+
+## Install
+
+Nothing to install alongside it — no Rust, no Node. Those are needed to *build*
+SimpleBar, not to run it; the download carries finished binaries.
+
+1. Download `SimpleBar_0.1.0_x64.dmg` from the
+   [latest release](https://github.com/daniel-p-allen/SimpleBar/releases/latest).
+2. Open the DMG and drag **SimpleBar** to Applications.
+3. Open it. **macOS will refuse the first time** — see below.
+4. Click **Connect to Claude Code** in the window. That copies the producer to
+   `~/.local/bin/` and points `~/.claude/settings.json` at it, backing up any
+   existing settings first. The button disappears once it has worked.
+5. Use Claude Code. Each status-line render updates the gauge; the window shows
+   "no data yet" until the first one arrives.
+
+### The first-launch warning
+
+SimpleBar is **unsigned** — there is no paid Apple Developer account behind it —
+so macOS shows "SimpleBar cannot be opened because it is from an unidentified
+developer", or "Apple could not verify it is free of malware".
+
+Once, to get past it: open **System Settings → Privacy & Security**, scroll to
+the message about SimpleBar being blocked, and click **Open Anyway**. Every
+launch after that is normal.
+
+There is no way around this without paying Apple to sign and notarize the app.
+
+## Building it yourself
+
+Not needed to use SimpleBar — this is the developer path.
+
+Requirements:
 
 - **macOS.** Stage 1 is macOS only.
 - **Rust** — install via [rustup](https://rust-lang.org/tools/install/)
@@ -71,22 +106,20 @@ list — including M5, an adjustable-translucency menu, dropped by decision.
 - **Xcode Command Line Tools** — Tauri builds the window against them. If you
   don't have them: `xcode-select --install`.
 
-## Quick start
-
-With the requirements above in place:
+Then:
 
 1. `git clone https://github.com/daniel-p-allen/SimpleBar.git`
 2. `cd SimpleBar`
 3. `make build` — builds the producer, the installer, and an unsigned
    `SimpleBar.app` (a few minutes the first time).
 4. `make install-statusline` — wires the producer into
-   `~/.claude/settings.json`, backing the file up first.
+   `~/.claude/settings.json`, backing the file up first. This points the status
+   line at the binary in your checkout, so it is the right choice while working
+   on the code and the wrong one if you later move or delete the clone.
 5. `make run` — opens the app window.
-6. Use Claude Code. Each status-line render updates the gauge; the window shows
-   "no data yet" until the first one arrives.
 
-The app is **unsigned** — there's no Apple Developer account behind this build,
-so you run your own local build rather than a downloaded, double-clickable app.
+A checkout wired this way is recognised as already connected, so the Connect
+button stays hidden.
 
 ## Developing
 
@@ -113,8 +146,9 @@ cat tests/fixtures/full.json | statusline/target/debug/simplebar-statusline
 
 ## Wiring it by hand
 
-`make install-statusline` is the easy path. To do it yourself, add to
-`~/.claude/settings.json` (back up first), pointing at your release binary:
+The Connect button is the easy path, and `make install-statusline` the
+developer's. To do it yourself, add to `~/.claude/settings.json` (back up
+first), pointing at your release binary:
 
 ```json
 "statusLine": {
