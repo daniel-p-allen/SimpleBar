@@ -44,7 +44,10 @@ RECORD="$STATE_HOME/simplebar/install.json"
 STATE_DIR="$STATE_HOME/simplebar"
 CONFIG_DIR="$CONFIG_HOME/simplebar"
 INSTALLED_APP="/Applications/SimpleBar.app"
-DMG="src-tauri/target/release/bundle/dmg/SimpleBar_0.1.0_x64.dmg"
+# Universal builds land under their target triple. Globbed rather than named,
+# so a version bump does not silently break the quarantine step.
+BUNDLE="src-tauri/target/universal-apple-darwin/release/bundle"
+DMG=$(ls "$BUNDLE"/dmg/*.dmg 2>/dev/null | head -1)
 
 usage() {
     cat <<'EOF'
@@ -188,7 +191,7 @@ reset_install() {
 # would on a new machine — and a Connect click writes into the throwaway rather
 # than the real one. This is how the button was first verified.
 run_sandbox() {
-    app="src-tauri/target/release/bundle/macos/SimpleBar.app/Contents/MacOS/simplebar"
+    app="$BUNDLE/macos/SimpleBar.app/Contents/MacOS/simplebar"
     [ -x "$app" ] || { echo "No built app at $app — run make build first."; exit 1; }
 
     sandbox=$(mktemp -d "${TMPDIR:-/tmp}/simplebar-sandbox.XXXXXX")
