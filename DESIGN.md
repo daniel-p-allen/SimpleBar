@@ -162,6 +162,13 @@ plays it without the page ever having received a user gesture, so the alert
 does not have to move to the Rust side or wait on a click that a HUD may never
 get.
 
+Each ding is three of these notes in quick succession (added 2026-08-05), not
+one — a single short tone read as incidental, easy to mistake for some other
+app's notification; three inside a second reads as deliberate. The gap between
+notes scales with note length so they never overlap. Applies uniformly to the
+threshold alert and the unmute confirmation tone below — one ding-set per
+event either way, just three notes instead of one.
+
 The watch is on the *directory*, not on `usage.json` itself. Because the
 producer writes atomically — temp file plus rename — each write replaces the
 inode, and a file watch would follow the old one and stop firing after the
