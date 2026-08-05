@@ -7,9 +7,19 @@ fix the code. No silent drift.
 All milestones are done: the producer, the window, the file watch, the wheel,
 the beeps and mute toggle, the stale and no-data states, the remembered window
 geometry, and M8 packaging. M5 (adjustable translucency) was dropped by
-decision — see "Decisions changed" in `DESIGN.md`. M8 is an unsigned local
-build (`make build` / `make run` / `make install-statusline`) — no Apple
-Developer account, so no signing, notarization or clean-Mac distribution.
+decision — see "Decisions changed" in `DESIGN.md`.
+
+Installing is now the app's own job: the `.app` carries the producer in
+`Contents/Resources/`, and a **Connect to Claude Code** button copies it to
+`~/.local/bin/` and registers it in `~/.claude/settings.json`. The button hides
+itself once wired, and a checkout wired by `make install-statusline` counts as
+wired, so developers never see it. Both routes call
+`statusline/src/lib.rs` — never write a second copy of the settings-editing
+code. See "The app installs itself" in `DESIGN.md`.
+
+Still no Apple Developer account, so the build stays unsigned: a downloaded DMG
+throws Gatekeeper's "unidentified developer" and needs one manual approval in
+System Settings. That is the ceiling, not a bug to fix.
 
 ## What this is
 
@@ -38,7 +48,7 @@ scripts/       repo tooling, including check-secrets.sh
 ```bash
 make build              # build both binaries and the unsigned .app
 make run                # build if needed, then open the app
-make install-statusline # wire the producer into ~/.claude/settings.json
+make install-statusline # developer path: wire the checkout's producer in
 make test               # unit tests, both sides
 make check              # refuse to ship a committed credential
 make dev-stop           # stop the dev app and everything it started
