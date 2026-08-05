@@ -21,13 +21,12 @@ just this machine.
 
 **Expect this, it is not a virus and nothing is broken:**
 
-> **"SimpleBar" cannot be opened because Apple cannot check it for malicious
-> software.**
->
-> or, on newer macOS:
->
-> **"SimpleBar" Not Opened — Apple could not verify "SimpleBar" is free of
-> malware that may harm your Mac or compromise your privacy.**
+> **macOS will block SimpleBar from opening, saying Apple cannot check or
+> verify it for malicious software.**
+
+The exact wording varies by macOS version, but it always amounts to the same
+thing: Apple has not vetted this app, so your Mac will not run it until you
+say so.
 
 Every Mac app has to be signed and notarized by Apple to open without this, and
 that requires an Apple Developer account at **$99 a year**. This is a free
