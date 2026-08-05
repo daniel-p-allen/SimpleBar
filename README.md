@@ -17,6 +17,33 @@ just this machine.
 > Code command-line tool's status-line feature. Support for other Claude
 > surfaces is planned for later — see `DESIGN.md`.
 
+## ⚠️ macOS will refuse to open this the first time. Sorry.
+
+**Expect this, it is not a virus and nothing is broken:**
+
+> **macOS will block SimpleBar from opening, saying Apple cannot check or
+> verify it for malicious software.**
+
+The exact wording varies by macOS version, but it always amounts to the same
+thing: Apple has not vetted this app, so your Mac will not run it until you
+say so.
+
+Every Mac app has to be signed and notarized by Apple to open without this, and
+that requires an Apple Developer account at **$99 a year**. This is a free
+hobby project and nobody is paying that fee, so the app ships unsigned and
+macOS treats it with suspicion.
+
+**Getting past it, once:**
+
+1. Try to open SimpleBar. Let it be refused.
+2. Open **System Settings → Privacy & Security**.
+3. Scroll down to the message about SimpleBar being blocked, and click
+   **Open Anyway**.
+4. Confirm. Every launch after this is normal.
+
+The source is all here if you would rather read it than trust it — or build it
+yourself, which sidesteps the warning entirely.
+
 ## How it fits together
 
 ```mermaid
@@ -83,15 +110,9 @@ SimpleBar, not to run it; the download carries finished binaries.
 
 ### The first-launch warning
 
-SimpleBar is **unsigned** — there is no paid Apple Developer account behind it —
-so macOS shows "SimpleBar cannot be opened because it is from an unidentified
-developer", or "Apple could not verify it is free of malware".
-
-Once, to get past it: open **System Settings → Privacy & Security**, scroll to
-the message about SimpleBar being blocked, and click **Open Anyway**. Every
-launch after that is normal.
-
-There is no way around this without paying Apple to sign and notarize the app.
+See [the warning above](#️-macos-will-refuse-to-open-this-the-first-time-sorry) —
+step 3 is where it happens. One trip to System Settings → Privacy & Security,
+then never again.
 
 ## Building it yourself
 
