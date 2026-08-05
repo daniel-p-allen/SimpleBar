@@ -10,6 +10,17 @@
 
   <body>
     <!--
+      Connect to Claude Code. Shown only until the status line is wired, then
+      gone for good — a permanent control for a one-time action is clutter.
+
+      It sits in the transparent space above the wheel, positioned absolutely
+      rather than in flow: taken out of the layout, its disappearance cannot
+      shift the wheel underneath it. Hidden by default so a wired install never
+      flashes it during the first frame, before the state has been read.
+    -->
+    <button id="connect" type="button" hidden></button>
+
+    <!--
       The wheel. Live as of M3: the Rust side watches usage.json and pushes
       each new reading in, so this reflects the current number rather than a
       snapshot taken when the window opened.

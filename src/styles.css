@@ -77,6 +77,58 @@ body {
   height: 100%;
 }
 
+/* Connect to Claude Code — see the comment in index.html for why it is here at
+   all and why it vanishes.
+
+   Absolute, so the wheel below never moves: the button is temporary, and a
+   control that reserves layout space makes the gauge jump the moment it goes.
+   Centred on the window rather than the wheel, and clamped with max-width so a
+   narrow window wraps the label instead of pushing it off the edge.
+
+   This one is a solid, filled control, unlike the stripped-down mute and pin
+   toggles. Those are ambient, glanced at and mostly ignored; this is the one
+   thing a new user must find and press, on a window that is 5% opaque. Chrome
+   is what makes it legible against whatever happens to be behind it. */
+#connect {
+  position: absolute;
+  top: 3vmin;
+  left: 50%;
+  transform: translateX(-50%);
+  max-width: 90vw;
+
+  font: inherit;
+  font-size: max(11px, 2.2vmin);
+  padding: 1.2vmin 2.6vmin;
+  border: none;
+  border-radius: 999px;
+  background: var(--band-normal);
+  color: #fff;
+  cursor: pointer;
+}
+
+#connect:hover {
+  filter: brightness(1.08);
+}
+
+#connect:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+}
+
+/* Mid-connect: the copy and the settings write are quick, but not always
+   instant, and a button that looks unchanged invites a second click that would
+   run the whole thing twice. */
+#connect:disabled {
+  cursor: default;
+  opacity: 0.7;
+}
+
+/* The wiring failed and the label says so. Red rather than green, because the
+   label alone would otherwise be the only sign anything went wrong. */
+#connect[data-failed="true"] {
+  background: var(--band-critical);
+}
+
 /* Backdrop: solid disc behind the centre text, high opacity — deliberately
    not the ~5% window alpha, so text stays legible regardless of what is on
    the desktop behind the window. This disc is where legibility is actually

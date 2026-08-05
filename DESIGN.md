@@ -474,6 +474,48 @@ visible to whoever reads this next.
   it: stretch the window instead of true-fullscreening the terminal, and the
   pin works.
 
+- **The app installs itself — added 2026-08-05.** Supersedes "the repo ships as
+  **source**: people clone and `make run`" in the packaging decision above.
+  Installing meant a terminal, a clone, and `make install-statusline`, which
+  wired a `statusLine` command pointing into the repo's own `target/`
+  directory. Deleting or moving the working copy silently stopped the gauge
+  updating, and the whole route asked a user to run a build system to get a
+  status readout. The target install is now: download the DMG, drag to
+  Applications, open, click one button.
+
+  **The producer ships inside the `.app` and is copied out on connect.** The
+  bundle carries `simplebar-statusline` in `Contents/Resources/`; connecting
+  copies it to `~/.local/bin/simplebar-statusline`, the location the file table
+  above has always specified, and wires *that* path. The producer runs inside
+  Claude Code, not inside the app, so it must not depend on the app still
+  existing: the copy keeps working when the app is renamed, moved to another
+  folder, or deleted outright. Wiring straight into the bundle would have been
+  fewer moving parts but breaks on the first drag, and silently — the failure
+  surfaces as a status line that stopped updating, with no cause on screen.
+
+  **`install.json` finally gets written.** Promised in the file table and never
+  implemented. It records the version of the copied producer, which is what
+  lets the app tell *wired and current* from *wired to an older copy* after an
+  app update.
+
+  **Connecting is a button, never automatic.** Editing another tool's
+  `~/.claude/settings.json` without being asked is hostile, however convenient
+  — so the app does it on an explicit click and takes a backup first. The
+  button sits in the transparent space above the wheel and **disappears once
+  wired**, since a permanent control for a one-time action is clutter. It is
+  positioned absolutely rather than in flow, so the wheel does not jump when it
+  goes.
+
+  **`make install-statusline` stays**, as the developer path. It costs almost
+  nothing now that both it and the app call the same extracted library, and it
+  is the only route that works from a source checkout with no bundle built.
+
+  **Gatekeeper is unchanged and unsolved.** The packaging decision above still
+  holds: unsigned, no notarization, so a downloaded DMG still throws
+  "unidentified developer" and still needs one trip to System Settings →
+  Privacy & Security. Nothing here removes that step; the README documents it.
+  This is the ceiling on "easy install" without a paid Apple account.
+
 - **The unmute toggle confirms itself with a tone — added 2026-08-05.** M6b
   left the mute button silent in both directions, which makes unmuting an act
   of faith: nothing happens until the next threshold is crossed, which may be
