@@ -17,7 +17,9 @@ TESTS := tests
 
 # Where `tauri build` drops the unsigned bundle. Kept in one place because both
 # `build` (asserts it appeared) and `run` (opens it) name it.
-APP := src-tauri/target/release/bundle/macos/SimpleBar.app
+# Universal builds land under their target triple, not plain `release/`.
+APP := src-tauri/target/universal-apple-darwin/release/bundle/macos/SimpleBar.app
+DMG_DIR := src-tauri/target/universal-apple-darwin/release/bundle/dmg
 
 .PHONY: help test test-producer test-app check clean dev-stop build producer run install-statusline
 
@@ -38,15 +40,35 @@ help:
 # needs the CLI, and a fresh clone will not have it yet.
 build: producer
 	npm install
-	npx tauri build
+	npx tauri build --target universal-apple-darwin
 
-# The producer, in release. A prerequisite of anything that touches the app
-# rather than a step inside `build`, because the app cannot be compiled without
-# it: tauri.conf.json lists the binary as a bundled resource, and tauri-build
-# fails outright — "resource path ... doesn't exist" — when it is missing. That
-# is a build-time dependency between the two crates, so it is expressed as one.
+# The producer, in release, as a universal binary.
+#
+# A prerequisite of anything that touches the app rather than a step inside
+# `build`, because the app cannot be compiled without it: tauri.conf.json lists
+# the binary as a bundled resource, and tauri-build fails outright — "resource
+# path ... doesn't exist" — when it is missing. That is a build-time dependency
+# between the two crates, so it is expressed as one.
+#
+# Built for both architectures and merged with `lipo`, because a single
+# download that runs everywhere beats asking a user which processor their Mac
+# has — a question many cannot answer, and getting it wrong looks like a broken
+# app rather than a wrong choice. The cost is a few megabytes.
+#
+# The installer is merged too, and both land in `target/release/` rather than a
+# per-architecture directory: `simplebar-install` finds the producer as its own
+# sibling, so the two must sit together, and `tauri.conf.json` names that path.
 producer:
-	cargo build --release --manifest-path statusline/Cargo.toml
+	rustup target add x86_64-apple-darwin aarch64-apple-darwin
+	cargo build --release --manifest-path statusline/Cargo.toml --target x86_64-apple-darwin
+	cargo build --release --manifest-path statusline/Cargo.toml --target aarch64-apple-darwin
+	@mkdir -p statusline/target/release
+	lipo -create -output statusline/target/release/simplebar-statusline \
+		statusline/target/x86_64-apple-darwin/release/simplebar-statusline \
+		statusline/target/aarch64-apple-darwin/release/simplebar-statusline
+	lipo -create -output statusline/target/release/simplebar-install \
+		statusline/target/x86_64-apple-darwin/release/simplebar-install \
+		statusline/target/aarch64-apple-darwin/release/simplebar-install
 
 # Open the built app, building first only if the bundle is absent — so a plain
 # `make run` after a build is instant, but a fresh clone still just works. A
@@ -60,8 +82,7 @@ run:
 # binary built alongside the producer, so it needs the release build first;
 # building only the statusline crate rather than the whole app keeps it quick
 # when the user only wants the status line, not the window.
-install-statusline:
-	cargo build --release --manifest-path statusline/Cargo.toml
+install-statusline: producer
 	./statusline/target/release/simplebar-install
 
 # The producer runs inside Claude Code's status line, in the critical path of

@@ -5,8 +5,14 @@ limit is left, as a circular gauge that drains as you use it.
 
 Status: all milestones built — producer, window, file watch, wheel, beeps,
 mute, the stale and no-data states, remembered window geometry, and M8
-packaging (`make build` / `make run` / `make install-statusline`, an unsigned
-local build). M5 was dropped by decision.
+packaging. M5 was dropped by decision.
+
+Since M8 the app installs itself: the `.app` carries the producer inside it and
+a Connect button wires Claude Code, so using SimpleBar needs neither a terminal
+nor a checkout. The build is a universal binary, running natively on Apple
+Silicon and Intel, and remains **unsigned** — no Apple Developer account, so
+first launch always meets Gatekeeper. `make build` / `make run` /
+`make install-statusline` stay as the developer path.
 
 ## What it is
 
@@ -544,6 +550,27 @@ visible to whoever reads this next.
   "unidentified developer" and still needs one trip to System Settings →
   Privacy & Security. Nothing here removes that step; the README documents it.
   This is the ceiling on "easy install" without a paid Apple account.
+
+- **One universal binary, not a choice of two — added 2026-08-05.** The first
+  builds were Intel-only, because that is the machine they were built on. Most
+  Macs sold since 2020 are Apple Silicon, so the majority of a first-time
+  audience would have downloaded something that needed Rosetta or refused to
+  open at all.
+
+  Shipping *two* downloads was considered and rejected. It asks a question many
+  users cannot answer — most people do not know which processor their Mac has —
+  and getting it wrong produces a failure that looks like a broken app rather
+  than a wrong choice. It also doubles what must stay in step at every release.
+  A universal binary contains both architectures in one file, so nothing is
+  lost by removing the decision; the cost is a few megabytes, which matters at
+  VS Code's size and not at ours.
+
+  Both halves are merged, not just the app: the producer is bundled inside the
+  `.app` and copied out on connect, so an Intel-only producer would strand
+  exactly the users the change is for. `make producer` builds each
+  architecture and `lipo`s them, and the installer is merged alongside it —
+  `simplebar-install` resolves the producer as its own sibling, so the two must
+  live in the same directory.
 
 - **The unmute toggle confirms itself with a tone — added 2026-08-05.** M6b
   left the mute button silent in both directions, which makes unmuting an act

@@ -88,26 +88,30 @@ reading mute the alert beeps and pin the window on top.
 
 ## Status
 
-**M1–M4, M6, M7 and M9 built.** The producer, window, file watch and wheel
-work: the wheel drains, changes colour at 20% and 10%, and follows the reading
-live while Claude Code runs. It beeps once on each threshold crossing with a
-mute toggle (M6), shows no-data and stale states (M7), and remembers its size
-and position across restarts (M9). Packaging (M8) builds an unsigned local
-`.app` and wires the producer in via `make install-statusline`. A pin toggle
-floats the window above other apps. See `DESIGN.md` for the full milestone
-list — including M5, an adjustable-translucency menu, dropped by decision.
+**Everything built and working.** The wheel drains, changes colour at 20% and
+10%, and follows the reading live while Claude Code runs. It sounds an alert on
+each threshold crossing, with a mute toggle; shows distinct no-data and stale
+states rather than pretending an old number is current; remembers its size and
+position; and pins above other windows on demand.
 
-The app now installs itself: the `.app` carries the producer inside it, and a
-**Connect to Claude Code** button copies it to `~/.local/bin/` and registers it,
-so using SimpleBar no longer needs a terminal or a checkout.
+The app installs itself: the `.app` carries the producer inside it, and a
+**Connect to Claude Code** button copies it out and registers it, so using
+SimpleBar needs neither a terminal nor a checkout. The download is a universal
+binary — one file, native on both Apple Silicon and Intel — and is unsigned,
+which is why the warning above exists.
+
+See `DESIGN.md` for the milestone history, including M5, an
+adjustable-translucency menu, dropped by decision.
 
 ## Install
 
 Nothing to install alongside it — no Rust, no Node. Those are needed to *build*
 SimpleBar, not to run it; the download carries finished binaries.
 
-1. Download `SimpleBar_0.1.0_x64.dmg` from the
+1. Download the `.dmg` from the
    [latest release](https://github.com/daniel-p-allen/SimpleBar/releases/latest).
+   One download for every Mac — it is a universal binary, so it runs natively on
+   both Apple Silicon and Intel, and there is nothing to choose between.
 2. Open the DMG and drag **SimpleBar** to Applications.
 3. Open it. **macOS will refuse the first time** — see below.
 4. Click **Connect to Claude Code** in the window. That copies the producer to
