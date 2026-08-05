@@ -15,6 +15,7 @@
 
 import {
   bandFor,
+  connectButton,
   formatResetTime,
   modelLabel,
   muteButton,
@@ -123,6 +124,22 @@ check("unpinned label names the action", pinButton(false).label, "Pin on top");
 check("pinned label names the action", pinButton(true).label, "Unpin from top");
 check("aria-pressed is false when unpinned", pinButton(false).pressed, "false");
 check("aria-pressed is true when pinned", pinButton(true).pressed, "true");
+
+console.log("test_connect_button");
+// The state that matters most: once wired, the button must leave the face
+// entirely. A HUD whose point is one number cannot carry a permanent control
+// announcing a job already done.
+check("a wired install shows nothing", connectButton("wired").hidden, true);
+check("an unwired install offers a connect", connectButton("not-wired").hidden, false);
+check("an outdated link offers a fix", connectButton("outdated").hidden, false);
+// Named for what the click does. "Connect" on an install that already works
+// would misdescribe replacing the existing wiring.
+check("unwired names the action", connectButton("not-wired").label, "Connect to Claude Code");
+check("outdated names an update", connectButton("outdated").label, "Update the Claude Code link");
+// Fail towards silence: rewiring a working install is the costly mistake, and
+// an unrecognised state is not evidence anything is wrong.
+check("an unknown state stays hidden", connectButton("something-else").hidden, true);
+check("undefined stays hidden", connectButton(undefined).hidden, true);
 
 if (failures.length) {
   console.log(`\n${failures.length} failed`);

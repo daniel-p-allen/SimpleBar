@@ -25,4 +25,9 @@ serde_json = "1"
 # File watching (M3). Uses the OS notification API (FSEvents on macOS) rather
 # than polling, which is what keeps idle CPU at ~0% per DESIGN.md.
 notify = "8"
+# The producer crate, for its settings.json wiring — the Connect button and
+# `make install-statusline` must edit Claude Code's config the same way, so
+# both call this rather than keeping a copy each. Path dependency: the two
+# crates ship together and are versioned together.
+simplebar-statusline = { path = "../statusline" }
 

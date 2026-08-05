@@ -142,6 +142,30 @@ export function pinButton(pinned) {
   };
 }
 
+/// How the Connect button should present itself, given the wiring state the
+/// Rust side reports.
+///
+/// Unlike mute and pin this is not a toggle — it is a one-time action that
+/// removes its own reason to exist, so there is no `pressed` state and the
+/// interesting output is `hidden`. A wired install must show nothing at all:
+/// the HUD's whole point is one number, and a button reading "connected" would
+/// be permanent furniture announcing a job already done.
+///
+/// An unknown state hides the button rather than showing it. The failure that
+/// matters is offering to rewire an install that is already working — the
+/// opposite mistake merely costs a user one visit to the README.
+export function connectButton(state) {
+  if (state === "not-wired") {
+    return { label: "Connect to Claude Code", hidden: false };
+  }
+  if (state === "outdated") {
+    // Named as an update, not a connect: something is already working, and the
+    // click replaces it rather than setting it up.
+    return { label: "Update the Claude Code link", hidden: false };
+  }
+  return { label: "", hidden: true };
+}
+
 /// Epoch seconds → "1:00 am", "10:00 pm".
 ///
 /// The locale is pinned to en-US rather than the system's, because DESIGN.md

@@ -1,5 +1,6 @@
 import {
   bandFor,
+  connectButton,
   formatAsOf,
   formatResetTime,
   isStale,
@@ -184,6 +185,40 @@ function update(usage) {
   draw();
 }
 
+/// Shows or hides the Connect button for the wiring state given.
+function renderConnect(state) {
+  const { label, hidden } = connectButton(state);
+  const button = document.querySelector("#connect");
+  button.textContent = label;
+  button.hidden = hidden;
+  button.disabled = false;
+  delete button.dataset.failed;
+}
+
+/// Copies the producer out of the app and points Claude Code at it.
+///
+/// Disabled for the duration: the work is a file copy and a settings write, so
+/// it is quick but not instant, and a second click would redo the whole thing.
+///
+/// A failure is reported on the button itself rather than logged. This is the
+/// one action in the app a user is actively waiting on, and the console is not
+/// somewhere a HUD's audience looks — a button that appears to do nothing would
+/// read as a broken app.
+async function connect() {
+  const button = document.querySelector("#connect");
+  button.disabled = true;
+  button.textContent = "Connecting…";
+
+  try {
+    renderConnect(await invoke("connect_statusline"));
+  } catch (err) {
+    button.dataset.failed = "true";
+    button.textContent = "Could not connect — see the README";
+    button.disabled = false;
+    console.error("could not wire the status line:", err);
+  }
+}
+
 /// Nothing has ever been written, or the file is unreadable. A different state
 /// from stale, and it says so: there is no number to protect, so the
 /// instruction can be direct.
@@ -212,6 +247,12 @@ window.addEventListener("DOMContentLoaded", async () => {
   renderPin();
   document.querySelector("#mute").addEventListener("click", toggleMute);
   document.querySelector("#pin").addEventListener("click", togglePin);
+
+  // Never fails on the Rust side — an unreadable settings file reports
+  // "not-wired" rather than erroring — so there is nothing to catch. Read after
+  // the config so the two toggles are already correct if this call is slow.
+  document.querySelector("#connect").addEventListener("click", connect);
+  renderConnect(await invoke("read_statusline_state"));
 
   try {
     update(await invoke("read_usage"));

@@ -402,6 +402,162 @@ fn spawn_geometry_saver(window: tauri::WebviewWindow) {
     });
 }
 
+/// The producer, once copied out of the bundle.
+///
+/// Deliberately *not* run from inside `SimpleBar.app`. The producer is executed
+/// by Claude Code, not by this app, so it must outlive any particular location
+/// of the bundle — renaming the app, moving it out of Applications, or deleting
+/// it entirely leaves the status line working. See "The app installs itself" in
+/// DESIGN.md.
+fn installed_producer_path() -> Result<PathBuf, String> {
+    let home = env::var("HOME").map_err(|_| "no HOME in environment")?;
+    Ok(PathBuf::from(home).join(".local/bin/simplebar-statusline"))
+}
+
+/// What the app recorded about its own last install.
+///
+/// Exists to answer one question the settings file cannot: whether the copied
+/// producer is still the one this app ships. `command` is stored alongside so a
+/// record left by a different install path is recognisable rather than assumed.
+#[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
+struct InstallRecord {
+    version: String,
+    command: String,
+}
+
+fn install_record_path() -> Option<PathBuf> {
+    usage_dir().map(|d| d.join("install.json"))
+}
+
+fn read_install_record() -> Option<InstallRecord> {
+    let raw = fs::read_to_string(install_record_path()?).ok()?;
+    serde_json::from_str(&raw).ok()
+}
+
+/// Whether the status line is wired, and if so whether it is current.
+///
+/// Serialised as a plain string for the webview, which only ever switches a
+/// button on it.
+#[derive(Serialize, Deserialize, Clone, Copy, PartialEq, Debug)]
+#[serde(rename_all = "kebab-case")]
+enum StatuslineState {
+    NotWired,
+    Wired,
+    Outdated,
+}
+
+/// Decides the state from the three facts it depends on.
+///
+/// Pure, so the rules are testable without a home directory or a settings file.
+///
+/// Recognising *any* command ending in `simplebar-statusline` as wired — not
+/// just the path we would install — is deliberate. A developer who ran
+/// `make install-statusline` has a working status line pointing into their
+/// checkout, and nagging them with a Connect button would be wrong.
+///
+/// Anything else in `statusLine`, including another tool's, reads as not wired:
+/// that is a real choice the user may want to make, and `wire` backs the file
+/// up before changing it.
+fn statusline_state(
+    wired: Option<&str>,
+    record: Option<&InstallRecord>,
+    version: &str,
+) -> StatuslineState {
+    let Some(command) = wired else {
+        return StatuslineState::NotWired;
+    };
+    if !command.ends_with("simplebar-statusline") {
+        return StatuslineState::NotWired;
+    }
+
+    // Only a record describing *this* command can date it. One left by an
+    // earlier install pointing somewhere else says nothing about what is wired
+    // now, so the safe reading is that what is wired is fine.
+    match record {
+        Some(r) if r.command == command && r.version != version => StatuslineState::Outdated,
+        _ => StatuslineState::Wired,
+    }
+}
+
+/// Reports whether Claude Code is wired to a SimpleBar producer.
+///
+/// Never fails: every unreadable or unparseable input reads as not wired. The
+/// only consumer is a button, and a HUD that refused to draw because it could
+/// not classify a settings file would be worse than one offering a connect it
+/// does not strictly need.
+#[tauri::command]
+fn read_statusline_state() -> StatuslineState {
+    statusline_state(
+        simplebar_statusline::wired_command().as_deref(),
+        read_install_record().as_ref(),
+        env!("CARGO_PKG_VERSION"),
+    )
+}
+
+/// Copies the bundled producer to `~/.local/bin` and points Claude Code at it.
+///
+/// Only ever on an explicit click — silently editing another tool's config is
+/// hostile, however convenient. `wire` takes a backup first and refuses a
+/// `settings.json` it cannot parse, so a file we do not understand is left
+/// exactly as it was.
+///
+/// Errors are returned as text for the UI to show, because this is the one
+/// action in the app the user is waiting on a result from; failing silently
+/// would leave them clicking a button that appears to do nothing.
+#[tauri::command]
+fn connect_statusline(app: AppHandle) -> Result<StatuslineState, String> {
+    let bundled = app
+        .path()
+        .resolve("simplebar-statusline", tauri::path::BaseDirectory::Resource)
+        .map_err(|e| format!("cannot locate the bundled producer: {e}"))?;
+    if !bundled.exists() {
+        // The ordinary cause is running from `tauri dev`, where there is no
+        // bundle to copy out of.
+        return Err(format!(
+            "the bundled producer is missing at {} — build the app with `make build`",
+            bundled.display()
+        ));
+    }
+
+    let target = installed_producer_path()?;
+    let dir = target.parent().ok_or("no parent directory for the producer")?;
+    fs::create_dir_all(dir).map_err(|e| format!("cannot create {}: {e}", dir.display()))?;
+
+    // Temp file plus rename, as everything else here writes. Copying straight
+    // over the target would truncate a binary that Claude Code may be executing
+    // at that moment; a rename swaps it whole instead.
+    let tmp = target.with_extension("tmp");
+    fs::copy(&bundled, &tmp).map_err(|e| format!("cannot copy the producer: {e}"))?;
+    fs::rename(&tmp, &target).map_err(|e| format!("cannot install the producer: {e}"))?;
+
+    let command = target
+        .to_str()
+        .ok_or("the producer path is not valid UTF-8")?
+        .to_string();
+
+    // Recorded before wiring: a record without a wired command merely dates a
+    // copied file, while a wired command with no record would look current
+    // forever and never offer an update.
+    write_install_record(&InstallRecord {
+        version: env!("CARGO_PKG_VERSION").to_string(),
+        command: command.clone(),
+    })?;
+
+    simplebar_statusline::wire(&command)?;
+    Ok(read_statusline_state())
+}
+
+fn write_install_record(record: &InstallRecord) -> Result<(), String> {
+    let path = install_record_path().ok_or("no home directory")?;
+    let dir = path.parent().ok_or("no parent directory")?;
+    fs::create_dir_all(dir).map_err(|e| e.to_string())?;
+
+    let encoded = serde_json::to_vec_pretty(record).map_err(|e| e.to_string())?;
+    let tmp = path.with_extension("json.tmp");
+    fs::write(&tmp, encoded).map_err(|e| e.to_string())?;
+    fs::rename(&tmp, &path).map_err(|e| e.to_string())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -423,7 +579,9 @@ pub fn run() {
             read_usage,
             read_config,
             set_muted,
-            set_pinned
+            set_pinned,
+            read_statusline_state,
+            connect_statusline
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
@@ -591,5 +749,75 @@ mod tests {
     #[test]
     fn the_default_is_sound_on() {
         assert!(!Config::default().muted, "sound must be on until turned off");
+    }
+
+    // Statusline wiring. No filesystem here — these are the classification
+    // rules, and the Connect button appears or does not appear on them.
+    const INSTALLED: &str = "/Users/x/.local/bin/simplebar-statusline";
+
+    fn record(command: &str, version: &str) -> InstallRecord {
+        InstallRecord { command: command.to_string(), version: version.to_string() }
+    }
+
+    #[test]
+    fn nothing_wired_offers_a_connect() {
+        assert_eq!(statusline_state(None, None, "0.1.0"), StatuslineState::NotWired);
+    }
+
+    #[test]
+    fn our_producer_reads_as_wired() {
+        assert_eq!(statusline_state(Some(INSTALLED), None, "0.1.0"), StatuslineState::Wired);
+    }
+
+    #[test]
+    fn a_developer_checkout_is_left_alone() {
+        // `make install-statusline` wires a path inside the repo. That is a
+        // working status line, so nagging with a Connect button would be wrong.
+        let dev = "/Users/x/code/SimpleBar/statusline/target/release/simplebar-statusline";
+        assert_eq!(statusline_state(Some(dev), None, "0.1.0"), StatuslineState::Wired);
+    }
+
+    #[test]
+    fn another_tool_reads_as_not_wired() {
+        // Someone else owns the status line. Offering to connect is right —
+        // and `wire` backs the file up before changing it.
+        for other in ["/usr/local/bin/starship", "/opt/homebrew/bin/ccusage"] {
+            assert_eq!(
+                statusline_state(Some(other), None, "0.1.0"),
+                StatuslineState::NotWired,
+                "{other} is not ours"
+            );
+        }
+    }
+
+    #[test]
+    fn a_newer_app_than_the_copied_producer_is_outdated() {
+        let old = record(INSTALLED, "0.1.0");
+        assert_eq!(statusline_state(Some(INSTALLED), Some(&old), "0.2.0"), StatuslineState::Outdated);
+    }
+
+    #[test]
+    fn a_matching_version_is_current() {
+        let same = record(INSTALLED, "0.1.0");
+        assert_eq!(statusline_state(Some(INSTALLED), Some(&same), "0.1.0"), StatuslineState::Wired);
+    }
+
+    #[test]
+    fn a_record_for_a_different_command_does_not_date_this_one() {
+        // The bug this guards: a stale record from an earlier install would
+        // otherwise mark a perfectly good developer wiring as out of date, and
+        // a Connect click would then overwrite their checkout path.
+        let elsewhere = record("/somewhere/else/simplebar-statusline", "0.0.1");
+        assert_eq!(
+            statusline_state(Some(INSTALLED), Some(&elsewhere), "0.9.0"),
+            StatuslineState::Wired
+        );
+    }
+
+    #[test]
+    fn the_state_serialises_as_the_string_the_webview_expects() {
+        let json = serde_json::to_string(&StatuslineState::NotWired).unwrap();
+        assert_eq!(json, r#""not-wired""#);
+        assert_eq!(serde_json::to_string(&StatuslineState::Outdated).unwrap(), r#""outdated""#);
     }
 }
