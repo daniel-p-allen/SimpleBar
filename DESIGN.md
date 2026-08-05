@@ -162,6 +162,13 @@ plays it without the page ever having received a user gesture, so the alert
 does not have to move to the Rust side or wait on a click that a HUD may never
 get.
 
+Each ding is three of these notes in quick succession (added 2026-08-05), not
+one — a single short tone read as incidental, easy to mistake for some other
+app's notification; three inside a second reads as deliberate. The gap between
+notes scales with note length so they never overlap. Applies uniformly to the
+threshold alert and the unmute confirmation tone below — one ding-set per
+event either way, just three notes instead of one.
+
 The watch is on the *directory*, not on `usage.json` itself. Because the
 producer writes atomically — temp file plus rename — each write replaces the
 inode, and a file watch would follow the old one and stop firing after the
@@ -508,6 +515,23 @@ visible to whoever reads this next.
   "unidentified developer" and still needs one trip to System Settings →
   Privacy & Security. Nothing here removes that step; the README documents it.
   This is the ceiling on "easy install" without a paid Apple account.
+
+- **The unmute toggle confirms itself with a tone — added 2026-08-05.** M6b
+  left the mute button silent in both directions, which makes unmuting an act
+  of faith: nothing happens until the next threshold is crossed, which may be
+  hours away, so a broken audio path is indistinguishable from a quiet
+  session. Unmuting now plays a short tone as its own confirmation.
+
+  **Only unmuting sounds.** A tone confirming that the app has just been
+  silenced contradicts the request, and mute-on is precisely the moment the
+  user has asked for quiet. Unmute-only still carries the whole signal, since
+  the tone is the evidence that audio works and is on.
+
+  The tone is deliberately *not* the alert beep. Same oscillator, but quieter
+  and half the length (0.08 gain, 0.12s, against the alert's 0.15 and 0.25s),
+  so a threshold crossing stays distinguishable from a button press. An alert
+  the user has been trained to hear as "I clicked something" is worse than no
+  alert at all.
 
 ## Open, to follow up
 
