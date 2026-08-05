@@ -13,9 +13,17 @@ just this machine.
 
 ![SimpleBar's circular gauge pinned over a terminal running Claude Code, showing 25% of the session left before it resets](assets/simplebar-over-claude-code.png)
 
-> **Scope: Claude Code CLI, for now.** SimpleBar currently reads from the Claude
-> Code command-line tool's status-line feature. Support for other Claude
-> surfaces is planned for later — see `DESIGN.md`.
+> **Scope: terminal Claude Code only.** SimpleBar reads the Claude Code
+> status-line feature, which exists only where Claude Code draws a terminal
+> interface. So it updates from **any terminal** — Terminal, iTerm, tmux, and
+> VS Code's *integrated terminal*. It does **not** update from the GUI
+> surfaces: the Claude desktop app, VS Code's Claude *panel*, the web, or
+> mobile. Those read the same settings file but never run a status-line
+> command, because a GUI has no status line to draw. Tested directly,
+> 2026-08-05 — see `DESIGN.md`.
+>
+> You only wire it once: every local surface shares `~/.claude/settings.json`,
+> so a single click connects every terminal you use.
 
 ## ⚠️ macOS will refuse to open this the first time. Sorry.
 

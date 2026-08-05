@@ -288,6 +288,35 @@ is no number to protect, so the instruction can be direct.
   but only refresh while Claude Code is running. An afternoon on your phone
   leaves the reading stale until you next open a session. The UI must show
   "as of 14:02" so it never silently lies.
+- **Terminal surfaces only — measured 2026-08-05.** A status line is the strip
+  of text under a terminal prompt, so only a Claude Code session drawing a
+  terminal interface ever runs the command. Confirmed by wrapping the wired
+  command in a logger that recorded the `session_id` of every caller
+  (`scripts/log-statusline-callers.sh`), then prompting each surface in turn
+  behind a timestamp marker:
+
+  | Surface | Fires `statusLine`? |
+  |---|---|
+  | Terminal (Terminal, iTerm, tmux) | Yes — measured |
+  | VS Code *integrated terminal* | Yes — measured |
+  | VS Code Claude *panel* | No — measured |
+  | Claude desktop app | No — measured |
+  | Web, mobile | No — documented, not tested |
+
+  The GUI surfaces are not misconfigured and not looking elsewhere: the desktop
+  app is unsandboxed and its own code references `.claude/settings.json`, so it
+  reads the very file that wires us and simply never invokes the command.
+
+  This settles the "does the desktop app fire statusLine" question that was open
+  from fine-tuning: it does not, and a stale bar during desktop use is the
+  correct behaviour rather than a bug.
+
+  **No tweak reaches the GUI surfaces.** The extension point does not exist
+  there, so this is not a configuration gap to close. The only route to
+  GUI-only usage is the OAuth API under "Rejected alternatives", deferred on
+  purpose. Naïve testing cannot see any of this — every open session rewrites
+  `usage.json` constantly, so watching the file for changes attributes nothing;
+  attribution needs the caller's identity.
 - **`rate_limits` is optional.** The field is absent for non-subscribers and
   before the first API response of a session. The producer writes nothing
   rather than writing zeros.
