@@ -19,7 +19,7 @@ TESTS := tests
 # `build` (asserts it appeared) and `run` (opens it) name it.
 APP := src-tauri/target/release/bundle/macos/SimpleBar.app
 
-.PHONY: help test test-producer test-app check clean dev-stop build run install-statusline
+.PHONY: help test test-producer test-app check clean dev-stop build producer run install-statusline
 
 # Default target: say what you can do, rather than doing something surprising.
 help:
@@ -36,10 +36,17 @@ help:
 # is an unsigned local build by decision — no Apple Developer account, so no
 # signing or notarization flags. `npm install` runs first because `tauri build`
 # needs the CLI, and a fresh clone will not have it yet.
-build:
-	cargo build --release --manifest-path statusline/Cargo.toml
+build: producer
 	npm install
 	npx tauri build
+
+# The producer, in release. A prerequisite of anything that touches the app
+# rather than a step inside `build`, because the app cannot be compiled without
+# it: tauri.conf.json lists the binary as a bundled resource, and tauri-build
+# fails outright — "resource path ... doesn't exist" — when it is missing. That
+# is a build-time dependency between the two crates, so it is expressed as one.
+producer:
+	cargo build --release --manifest-path statusline/Cargo.toml
 
 # Open the built app, building first only if the bundle is absent — so a plain
 # `make run` after a build is instant, but a fresh clone still just works. A
@@ -80,7 +87,7 @@ test-producer:
 
 # The app's own Rust side — config handling. Needs the Tauri build
 # dependencies, so it belongs wherever the app is already being built.
-test-app:
+test-app: producer
 	@cd src-tauri && cargo test --quiet
 
 # Refuse to ship if anything resembling a credential is in the tree. Stage 1

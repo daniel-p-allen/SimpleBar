@@ -99,6 +99,12 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # Before the app, not beside it: tauri.conf.json lists the producer as a
+      # bundled resource, so tauri-build refuses to compile the app while the
+      # binary is absent. Release, because that is the path the bundle names.
+      - name: Producer builds, for the app to bundle
+        run: make producer
+
       - name: Tauri app builds
         run: cargo build --manifest-path src-tauri/Cargo.toml
 
