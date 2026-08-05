@@ -1,8 +1,8 @@
 # SimpleBar
 
-**A companion app for Claude Code that turns your usage into a visual you can
-glance at.** See how much of your Claude 5-hour session limit is left, without
-asking.
+**A usage monitor for Claude Code: see how much of your 5-hour session limit is
+left, at a glance.** A macOS HUD that turns the number Claude Code already
+knows into a circular gauge, draining as you use it.
 
 SimpleBar is not a standalone tool — it a partner to Claude Code. Claude Code
 already knows your remaining session limit and can hand it to a status-line
@@ -192,6 +192,36 @@ first), pointing at your release binary:
 
 The reading is written to `$XDG_STATE_HOME/simplebar/usage.json` (default
 `~/.local/state/simplebar/`), per the XDG Base Directory Specification.
+
+## Common questions
+
+**How do I see how much Claude usage I have left?**
+Claude Code already knows — it receives your remaining 5-hour session limit and
+can pass it to a status-line command. SimpleBar registers itself as that
+command and draws the number as a gauge you can leave on screen.
+
+**Does this show usage from claude.ai and the mobile app too?**
+Yes. The figure Claude Code reports is account-wide, so browser and phone usage
+are already included. It only *refreshes* while a Claude Code session is
+running, which is why the gauge greys out and says so when the reading is old
+rather than showing a stale number as if it were current.
+
+**Does it need my API key?**
+No. SimpleBar makes no network calls and handles no credentials. It reads a
+local file that Claude Code's status line writes, and nothing leaves your
+machine.
+
+**Does it work with the Claude desktop app, or VS Code's Claude panel?**
+No — terminal sessions only, including VS Code's integrated terminal. A status
+line is a terminal feature, so the GUI surfaces never invoke it. Measured, not
+assumed: see `DESIGN.md`.
+
+**Is it a menu bar app?**
+No. It is a resizable window you can pin above your editor. A menu bar item
+cannot draw a gauge, play a sound, or be alt-tabbed to.
+
+**Does it cost anything, or send telemetry?**
+No to both. MIT licensed, no analytics, no accounts.
 
 ## Layout
 
