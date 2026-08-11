@@ -1,18 +1,23 @@
 # SimpleBar — Design
 
-A single-window macOS app that shows how much of your Claude 5-hour session
-limit is left, as a circular gauge that drains as you use it.
+A single-window desktop app that shows how much of your Claude 5-hour session
+limit is left, as a circular gauge that drains as you use it. macOS first;
+Windows 11 is being added from the same codebase — see "Windows support" under
+"Decisions changed".
 
 Status: all milestones built — producer, window, file watch, wheel, beeps,
 mute, the stale and no-data states, remembered window geometry, and M8
 packaging. M5 was dropped by decision.
 
-Since M8 the app installs itself: the `.app` carries the producer inside it and
+Since M8 the app installs itself: the bundle carries the producer inside it and
 a Connect button wires Claude Code, so using SimpleBar needs neither a terminal
-nor a checkout. The build is a universal binary, running natively on Apple
-Silicon and Intel, and remains **unsigned** — no Apple Developer account, so
-first launch always meets Gatekeeper. `make build` / `make run` /
-`make install-statusline` stay as the developer path.
+nor a checkout. The macOS build is a universal binary, running natively on Apple
+Silicon and Intel; the Windows build will be x64 only, because Windows has no
+universal-binary equivalent and an x64 build still runs under emulation on
+Windows-on-ARM. Neither is signed — no Apple Developer account and no Windows
+code-signing certificate — so first launch always meets Gatekeeper or
+SmartScreen. `make build` / `make run` / `make install-statusline` stay as the
+developer path.
 
 ## What it is
 
@@ -138,19 +143,34 @@ Claude Code ──stdin JSON──▶ simplebar-statusline ──▶ usage.json
 
 ### File locations
 
-Per the XDG Base Directory Specification, not a dotfolder in `$HOME`:
+Per the XDG Base Directory Specification on macOS and Linux, not a dotfolder in
+`$HOME`; per the platform convention on Windows.
 
-| What | Where |
-|---|---|
-| The reading | `$XDG_STATE_HOME/simplebar/usage.json`, default `~/.local/state/simplebar/` |
-| Preferences (mute) | `$XDG_CONFIG_HOME/simplebar/config.json`, default `~/.config/simplebar/` |
-| Installed producer binary | `~/.local/bin/simplebar-statusline` |
-| Setup record | `$XDG_STATE_HOME/simplebar/install.json` |
+| What | macOS / Linux | Windows |
+|---|---|---|
+| The reading | `$XDG_STATE_HOME/simplebar/usage.json`, default `~/.local/state/simplebar/` | `%LOCALAPPDATA%\simplebar\usage.json` |
+| Preferences (mute) | `$XDG_CONFIG_HOME/simplebar/config.json`, default `~/.config/simplebar/` | `%LOCALAPPDATA%\simplebar\config.json` |
+| Installed producer binary | `~/.local/bin/simplebar-statusline` | `%LOCALAPPDATA%\SimpleBar\bin\simplebar-statusline.exe` |
+| Setup record | `$XDG_STATE_HOME/simplebar/install.json` | `%LOCALAPPDATA%\simplebar\install.json` |
+| Claude Code settings | `~/.claude/settings.json` | `%USERPROFILE%\.claude\settings.json` |
 
 SimpleBar is both a CLI (the producer) and a GUI (the app). macOS convention
 would put GUI data under `~/Library/Application Support`, but the two halves
 share these files and the producer is the half that runs in a terminal — so XDG
 wins, and a Linux port comes free.
+
+XDG has no meaning on Windows, so following it there would be cargo-culting a
+Unix layout onto a system that does not use it — and it would put a dotfolder in
+the home directory, which is exactly what the rule above rejects. Windows uses
+`%LOCALAPPDATA%`, which is where every other Windows tool keeps this kind of
+per-user state and where a user can actually find it. The environment overrides
+are still honoured first on every platform, so anyone who deliberately sets
+`XDG_STATE_HOME` on Windows gets what they asked for.
+
+The producer is installed to `%LOCALAPPDATA%\SimpleBar\bin\` rather than
+somewhere on `PATH`, because Windows has no per-user `PATH` directory
+equivalent to `~/.local/bin`. It does not need one: `statusLine` is given an
+absolute path, so `PATH` never enters into it.
 
 **`simplebar-statusline`** — a small Rust binary registered as the statusLine
 command. Reads the JSON blob on stdin, extracts `five_hour` and (if present)
@@ -206,9 +226,14 @@ the reading is.
 
 ### Stack
 
-**Tauri** (Rust + system webview). ~5MB binary, cross-platform when stages 2+
-arrive, and the Rust surface here is real but small — window setup, file
-watching, atomic writes. Chosen partly for the Rust experience.
+**Tauri** (Rust + system webview). ~5MB binary, cross-platform, and the Rust
+surface here is real but small — window setup, file watching, atomic writes.
+Chosen partly for the Rust experience.
+
+The cross-platform argument was speculative when the stack was picked and is
+now being cashed in: Windows is a target of the same framework rather than a
+rewrite. The rejected alternatives would each have blocked that — Swift/SwiftUI
+outright, React Native for want of a desktop story.
 
 Rejected: **Electron** (~200MB for one SVG), **Flutter** (new language, no
 Rust), **React Native** (mobile-first, no Linux target), **Swift/SwiftUI**
@@ -347,7 +372,20 @@ is no number to protect, so the instruction can be direct.
      Thresholds re-arm only when the window resets, detected by `resets_at`
      changing; usage falls only at a reset, so nothing else can legitimately
      re-arm one.
-- Stage 1 is macOS only. No server, no mobile, no tray icon.
+- **Desktop only.** macOS and Windows 11, both x64/arm64 as described above. No
+  server, no mobile, no tray icon.
+- **Mobile cannot work by porting this design.** The gauge's only data source is
+  Claude Code's `statusLine` hook, and Claude Code does not run on Android or
+  iOS — there is no producer, no `usage.json`, and nothing to watch. A phone
+  would need the reading pushed to it from a machine that *is* running Claude
+  Code, which is the network route deferred under "Rejected alternatives". This
+  is a missing transport, not a missing build target, and no amount of packaging
+  work reaches it.
+- **The build is unsigned on both platforms.** macOS shows Gatekeeper's
+  "unidentified developer"; Windows shows SmartScreen's "Windows protected your
+  PC". Each needs one manual approval on first launch. That is the ceiling
+  without a paid certificate on each platform, and it is accepted rather than
+  worked around — see "Packaging stays unsigned" under "Decisions changed".
 
 ## Standards adopted
 
@@ -356,7 +394,10 @@ they are box-ticking.
 
 - **[XDG Base Directory Specification](https://specifications.freedesktop.org/basedir/latest/)**
   — file locations, as above. Adopted now, because paths are painful to change
-  once people have installed.
+  once people have installed. It governs macOS and Linux. Windows follows its
+  own platform convention instead, since XDG has no meaning there; the
+  `XDG_*` environment overrides are still checked first everywhere, so the
+  specification is honoured wherever someone has actually opted into it.
 - **[Command Line Interface Guidelines](https://clig.dev/)** — governs the
   producer. Status line text is the primary output and goes to stdout; nothing
   goes to stderr; exit 0 on success; exit codes ≥126 are avoided because they
@@ -589,6 +630,42 @@ visible to whoever reads this next.
   the user has been trained to hear as "I clicked something" is worse than no
   alert at all.
 
+- **Windows support, in this repository — decided 2026-08-11.** "Stage 1 is
+  macOS only" is retired. SimpleBar now targets macOS and Windows 11 from one
+  codebase.
+
+  **One repository, not a fork.** Almost all of SimpleBar is already
+  platform-neutral: the blob parsing, the `usage.json` schema, the wheel, the
+  colour bands, the threshold rules, the staleness clock. The macOS-specific
+  surface is roughly six places — three path resolvers, the install location,
+  the `macos-private-api` Tauri feature, and the `lipo` build. A second
+  repository would mean two copies of the alert and parsing logic drifting
+  apart, which is the precise failure `statusline/src/lib.rs` was extracted to
+  prevent for the settings-file code. The cost of one repository is a handful of
+  `#[cfg]` branches, and that is much cheaper than the alternative.
+
+  **Native Windows, not WSL.** Confirmed with Dan: Claude Code runs natively on
+  Windows 11 in a terminal, so the producer is a Windows `.exe` writing to a
+  Windows path and the app watches that same path — one filesystem, and `notify`
+  works normally. Running Claude Code inside WSL would put the reading on the
+  Linux filesystem, reachable from Windows only over a `\\wsl$\...` UNC path
+  where change notification is unreliable and polling would probably be needed.
+  That case is not supported and is recorded under "Open, to follow up".
+
+  **x64 only.** Windows has no universal-binary equivalent, so supporting
+  Windows-on-ARM natively would mean two installers and a download choice the
+  user has to get right — the same question the macOS universal build exists to
+  remove. An x64 build runs under emulation on ARM Windows, so a single artefact
+  locks nobody out; native ARM performance is the only thing given up, and it is
+  not worth a second release artefact for a gauge that idles at ~0% CPU.
+
+  **Unverified until checked on the machine.** Claude Code is expected to read
+  `%USERPROFILE%\.claude\settings.json` on Windows and to execute a `statusLine`
+  command given as an absolute `.exe` path. Both are assumptions carried over
+  from the macOS behaviour and neither has been confirmed on Windows. They are
+  the first thing to test, because every install-path decision above depends on
+  them.
+
 ## Open, to follow up
 
 - **Lighter ticks in light mode — done by preference, 2026-08-04.** Dan
@@ -610,6 +687,25 @@ visible to whoever reads this next.
   the target on purpose. Either give the strokes a known background, or narrow
   the claim to say contrast is guaranteed only within the backdrop disc, where
   the text lives.
+
+- **Claude Code under WSL is not supported.** The Windows port assumes a native
+  Windows Claude Code. Under WSL the producer would write to the Linux
+  filesystem, and the Windows app would have to watch it across `\\wsl$\...`,
+  where `notify` cannot rely on change events and would likely need a polling
+  fallback. Worth doing only if someone actually wants it, since it costs a
+  second producer build and a second watch strategy.
+
+- **Windows on ARM has no native build.** x64 under emulation is the supported
+  answer. Revisit if ARM Windows machines become common enough that the
+  emulation overhead is noticed — which, for an app that idles at ~0% CPU, is
+  unlikely.
+
+- **Mobile needs a transport, not a port.** Recorded under "Constraints and
+  known limits": Claude Code does not run on Android or iOS, so there is no
+  local reading to display. Any mobile version requires a desktop machine to
+  push its reading somewhere the phone can read, which is a design conversation
+  about a network hop, an identity, and a privacy posture — none of which stage
+  1 has. Not started.
 
 ## Ideas parked for later
 
