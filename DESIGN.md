@@ -624,6 +624,22 @@ designed if and when picked up.
   session default or walking the user through it. Overlaps with the beep/alert
   machinery from M6 but is a distinct feature, not a rename of it.
 
+- **Chromeless window.** Drop the OS title bar and border so the HUD reads as
+  a floating wheel rather than an ordinary window. Needs its own move/resize
+  handling once the OS chrome that normally provides it is gone, and a way to
+  close it without a title-bar button — the right-click menu below is the
+  likely answer, not a separate design.
+
+- **Right-click context menu.** Currently nothing responds to a right-click.
+  Wanted at minimum as the close affordance a chromeless window would lose,
+  and a natural home for mute and other window-level actions that don't need
+  a persistent control on the HUD face.
+
+- **Light/dark mode.** The wheel and chrome are undesigned for light mode
+  today. Needs a decision on whether it follows the OS theme automatically or
+  is a toggle in the same menu as mute, and a pass over every colour the SVG
+  and webview currently hard-code.
+
 ## Repo conventions
 
 Follows the existing repos: `Makefile` as the single entry point, `scripts/`
