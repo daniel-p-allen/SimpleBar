@@ -172,6 +172,35 @@ somewhere on `PATH`, because Windows has no per-user `PATH` directory
 equivalent to `~/.local/bin`. It does not need one: `statusLine` is given an
 absolute path, so `PATH` never enters into it.
 
+#### Overrides
+
+Every location above can be redirected without rebuilding. Each resolver checks,
+in order: a SimpleBar-specific override, then the XDG variable where one
+applies, then the platform default.
+
+| Variable | Redirects |
+|---|---|
+| `SIMPLEBAR_STATE_DIR` | the directory holding `usage.json` and `install.json` |
+| `SIMPLEBAR_CONFIG_DIR` | the directory holding `config.json` |
+| `SIMPLEBAR_BIN_DIR` | where the Connect button installs the producer |
+| `SIMPLEBAR_CLAUDE_SETTINGS` | the full path to Claude Code's `settings.json` |
+
+These exist because the Windows defaults rest on two assumptions about Claude
+Code that have not been verified on Windows — that it reads
+`%USERPROFILE%\.claude\settings.json`, and that it will run a `statusLine`
+command given as an absolute `.exe` path. If either turns out to be wrong, or if
+a future Claude Code moves its settings, the fix is an environment variable
+rather than a new build. They are equally useful for testing: a test run can
+point the whole app at a temporary directory and touch nothing real.
+
+The SimpleBar override wins over the XDG variable deliberately. `XDG_STATE_HOME`
+is a system-wide preference that other tools also read; someone redirecting
+SimpleBar alone should not have to move everything else with it.
+
+Note that these are *paths*, not a general configuration mechanism. Preferences
+that a user should be able to change from the UI belong in `config.json`, not in
+an environment variable nobody will discover.
+
 **`simplebar-statusline`** — a small Rust binary registered as the statusLine
 command. Reads the JSON blob on stdin, extracts `five_hour` and (if present)
 `model.display_name`, writes `usage.json` atomically (temp file + rename, so

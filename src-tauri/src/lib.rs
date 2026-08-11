@@ -93,14 +93,13 @@ where
     Ok(serde_json::from_value(value).unwrap_or(None))
 }
 
-/// `$XDG_CONFIG_HOME`, defaulting to `~/.config`.
+/// The directory holding `config.json`.
+///
+/// Resolved by the producer's crate, not here. The two halves must agree on
+/// every path they share, and the only way to guarantee that is for one of
+/// them to own the rules — see `statusline/src/paths.rs`.
 fn config_dir() -> Option<PathBuf> {
-    if let Ok(xdg) = env::var("XDG_CONFIG_HOME") {
-        if !xdg.is_empty() {
-            return Some(PathBuf::from(xdg));
-        }
-    }
-    env::var("HOME").ok().map(|home| PathBuf::from(home).join(".config"))
+    simplebar_statusline::paths::config_dir()
 }
 
 /// Parses config text, falling back to defaults on anything unusable.
@@ -114,7 +113,7 @@ fn config_from_str(raw: &str) -> Config {
 #[tauri::command]
 fn read_config() -> Config {
     let Some(dir) = config_dir() else { return Config::default() };
-    let Ok(raw) = fs::read_to_string(dir.join("simplebar").join("config.json")) else {
+    let Ok(raw) = fs::read_to_string(dir.join("config.json")) else {
         // No file yet is the ordinary first-run case, not an error.
         return Config::default();
     };
@@ -127,7 +126,7 @@ fn read_config() -> Config {
 /// crash would read as malformed on next launch and silently lose every
 /// setting in it.
 fn write_config(config: &Config) -> Result<(), String> {
-    let dir = config_dir().ok_or("no home directory")?.join("simplebar");
+    let dir = config_dir().ok_or("no home directory")?;
     fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
 
     let encoded = serde_json::to_vec_pretty(config).map_err(|e| e.to_string())?;
@@ -233,23 +232,14 @@ fn clamp_to_visible(geometry: WindowGeometry, monitors: &[(f64, f64, f64, f64)])
     })
 }
 
-/// `$XDG_STATE_HOME`, defaulting to `~/.local/state`.
-///
-/// Mirrors the same resolution the producer (`statusline/src/main.rs`) uses,
-/// so the two agree on where the file lives without either depending on the
-/// other.
-fn state_dir() -> Option<PathBuf> {
-    if let Ok(xdg) = env::var("XDG_STATE_HOME") {
-        if !xdg.is_empty() {
-            return Some(PathBuf::from(xdg));
-        }
-    }
-    env::var("HOME").ok().map(|home| PathBuf::from(home).join(".local/state"))
-}
-
 /// The directory the producer writes into.
+///
+/// The producer's crate owns this resolution, so the watcher cannot end up
+/// watching a directory the producer does not write to. This used to be a
+/// hand-kept copy of the same rules, with a comment in each asking the reader
+/// to keep the two in step.
 fn usage_dir() -> Option<PathBuf> {
-    state_dir().map(|d| d.join("simplebar"))
+    simplebar_statusline::paths::state_dir()
 }
 
 /// Reads the reading the producer wrote. `Err` covers both "no data yet"
@@ -410,8 +400,16 @@ fn spawn_geometry_saver(window: tauri::WebviewWindow) {
 /// it entirely leaves the status line working. See "The app installs itself" in
 /// DESIGN.md.
 fn installed_producer_path() -> Result<PathBuf, String> {
-    let home = env::var("HOME").map_err(|_| "no HOME in environment")?;
-    Ok(PathBuf::from(home).join(".local/bin/simplebar-statusline"))
+    let dir = simplebar_statusline::paths::bin_dir()
+        .ok_or("no home directory to install the producer into")?;
+    Ok(dir.join(producer_file_name()))
+}
+
+/// The producer's filename on this platform — `.exe` on Windows.
+fn producer_file_name() -> &'static str {
+    simplebar_statusline::paths::producer_file_name(
+        simplebar_statusline::paths::Platform::current(),
+    )
 }
 
 /// What the app recorded about its own last install.
@@ -458,6 +456,28 @@ enum StatuslineState {
 /// Anything else in `statusLine`, including another tool's, reads as not wired:
 /// that is a real choice the user may want to make, and `wire` backs the file
 /// up before changing it.
+/// Whether a registered `statusLine` command is one of ours.
+///
+/// Matches with or without the `.exe`, and on either platform's separator,
+/// rather than against the path we would install. A developer who ran
+/// `make install-statusline` is wired to their checkout, and a Windows user's
+/// command ends in `.exe`; both are working status lines that should not be
+/// nagged with a Connect button.
+///
+/// Deliberately not `contains`: a path that merely mentions SimpleBar
+/// somewhere — a checkout directory holding some other tool's binary — is not
+/// our producer, and claiming it is would hide the Connect button from someone
+/// who still needs it.
+fn is_our_producer(command: &str) -> bool {
+    let trimmed = command.trim().trim_matches('"');
+    let name = trimmed
+        .rsplit(['/', '\\'])
+        .next()
+        .unwrap_or(trimmed);
+    let stem = name.strip_suffix(".exe").unwrap_or(name);
+    stem == "simplebar-statusline"
+}
+
 fn statusline_state(
     wired: Option<&str>,
     record: Option<&InstallRecord>,
@@ -466,7 +486,7 @@ fn statusline_state(
     let Some(command) = wired else {
         return StatuslineState::NotWired;
     };
-    if !command.ends_with("simplebar-statusline") {
+    if !is_our_producer(command) {
         return StatuslineState::NotWired;
     }
 
@@ -788,6 +808,36 @@ mod tests {
                 "{other} is not ours"
             );
         }
+    }
+
+    #[test]
+    fn a_windows_producer_reads_as_wired() {
+        // The installed command on Windows ends in `.exe`, and the path uses
+        // backslashes. Missing either would leave a correctly wired Windows
+        // user staring at a Connect button that never goes away.
+        let installed = r"C:\Users\dan\AppData\Local\SimpleBar\bin\simplebar-statusline.exe";
+        assert_eq!(statusline_state(Some(installed), None, "0.1.0"), StatuslineState::Wired);
+
+        let checkout = r"C:\code\SimpleBar\statusline\target\release\simplebar-statusline.exe";
+        assert_eq!(statusline_state(Some(checkout), None, "0.1.0"), StatuslineState::Wired);
+    }
+
+    #[test]
+    fn a_quoted_windows_path_reads_as_wired() {
+        // A path containing a space has to be quoted to survive the shell, and
+        // "Program Files" and "AppData\Local" sit next to each other in exactly
+        // the kind of profile that has one.
+        let quoted = r#""C:\Program Files\SimpleBar\simplebar-statusline.exe""#;
+        assert_eq!(statusline_state(Some(quoted), None, "0.1.0"), StatuslineState::Wired);
+    }
+
+    #[test]
+    fn a_path_merely_mentioning_simplebar_is_not_ours() {
+        // Someone else's binary living in a SimpleBar directory. Matching on
+        // the containing path rather than the filename would hide the Connect
+        // button from a user who genuinely is not wired.
+        let other = "/Users/x/code/SimpleBar/vendor/starship";
+        assert_eq!(statusline_state(Some(other), None, "0.1.0"), StatuslineState::NotWired);
     }
 
     #[test]

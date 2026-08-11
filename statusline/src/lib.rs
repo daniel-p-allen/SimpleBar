@@ -14,10 +14,11 @@
 //! operation fails, rather than replacing a file the user may keep other
 //! settings in.
 
+pub mod paths;
+
 use serde_json::{json, Value};
-use std::env;
 use std::fs;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 
 /// What a successful wiring did, for the caller to report.
 pub struct Wired {
@@ -28,10 +29,13 @@ pub struct Wired {
     pub backed_up: bool,
 }
 
-/// `~/.claude/settings.json`.
+/// `~/.claude/settings.json`, or its Windows equivalent.
+///
+/// Re-exported from [`paths`] rather than resolved here, so the app and the
+/// producer cannot end up looking at different files. See "Overrides" in
+/// DESIGN.md for redirecting it.
 pub fn settings_path() -> Result<PathBuf, String> {
-    let home = env::var("HOME").map_err(|_| "no HOME in environment")?;
-    Ok(Path::new(&home).join(".claude").join("settings.json"))
+    paths::settings_path()
 }
 
 /// The `statusLine` command currently registered, if there is one.

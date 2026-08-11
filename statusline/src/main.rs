@@ -19,10 +19,9 @@
 use chrono::{Local, TimeZone};
 use serde::Serialize;
 use serde_json::Value;
-use std::env;
 use std::fs;
 use std::io::{self, Read};
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 #[derive(Serialize)]
@@ -32,22 +31,6 @@ struct Usage {
     written_at: i64,
     model_name: Option<String>,
     effort_level: Option<String>,
-}
-
-/// `$XDG_STATE_HOME`, defaulting to `~/.local/state`.
-///
-/// SimpleBar is both a CLI (this producer) and a GUI (the Tauri app). macOS
-/// convention would put GUI data under `~/Library/Application Support`, but
-/// the two halves share this one file and the producer is the half that
-/// runs in a terminal — so we follow XDG, which also makes a Linux port
-/// free later.
-fn state_dir() -> Option<PathBuf> {
-    if let Ok(xdg) = env::var("XDG_STATE_HOME") {
-        if !xdg.is_empty() {
-            return Some(PathBuf::from(xdg));
-        }
-    }
-    env::var("HOME").ok().map(|home| PathBuf::from(home).join(".local/state"))
 }
 
 /// Pulls a reading out of a status line blob.
@@ -150,9 +133,9 @@ fn main() {
     let remaining = 100.0 - usage.used_percentage;
     let resets_at = usage.resets_at;
 
-    if let Some(dir) = state_dir() {
+    if let Some(dir) = simplebar_statusline::paths::state_dir() {
         // A write failure must never take out the status line.
-        let _ = write_reading(&dir.join("simplebar"), &usage);
+        let _ = write_reading(&dir, &usage);
     }
 
     if let Some(line) = status_line(remaining, resets_at) {
@@ -163,6 +146,11 @@ fn main() {
 #[cfg(test)]
 mod tests {
     use super::*;
+    // Only the tests need these: the fixture loader builds paths, and the
+    // write tests need a temp directory. The producer itself is handed the
+    // directory to write into and reads no environment of its own.
+    use std::env;
+    use std::path::PathBuf;
 
     /// The fixtures are shared with the consumer's tests, so they live at the
     /// repo root rather than inside this crate.
