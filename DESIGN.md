@@ -777,6 +777,26 @@ visible to whoever reads this next.
 
 ## Open, to follow up
 
+- **A required status check that no longer runs — found 2026-08-12.** `main`'s
+  branch protection requires three contexts: `producer`, `app`, and
+  `GitGuardian Security Checks`. The first two are this repository's own CI. The
+  third comes from a GitHub App, configured on github.com and mentioned nowhere
+  in the repository — no file naming it has ever been committed, so nothing in a
+  commit can install it, remove it, or make it report. It last ran on PR #14 on
+  5 August 2026 and has not reported since; on PR #15 it is not pending but
+  absent.
+
+  GitHub treats a required context that never arrives as permanently
+  unsatisfied, so this blocks every merge into `main` until it is resolved.
+  Three ways out, and they are not equivalent: reinstate the App so the check
+  runs again; drop the context from the required list, which is the honest
+  answer if the App is not coming back, since a required check that never runs
+  is a gate in name only; or merge with administrator privileges, which is a
+  bypass rather than a fix and should not become the habit that hides this.
+  `scripts/check-secrets.sh` still runs in CI and on every push, so the
+  repository is not unscanned in the meantime — but it is a different gate from
+  the one the policy names, and the policy should say what is actually true.
+
 - **Lighter ticks in light mode — done by preference, 2026-08-04.** Dan
   disliked the near-black (`#2b2b2b`) ticks, so light-mode `--ticks` is now
   `#d9d9d9`, matching the backdrop-disc grey. The dark-mode ticks are
