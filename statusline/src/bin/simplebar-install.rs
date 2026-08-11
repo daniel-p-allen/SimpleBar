@@ -43,7 +43,9 @@ fn producer_path() -> Result<String, String> {
     let dir = exe
         .parent()
         .ok_or("installer has no parent directory")?;
-    let producer = dir.join("simplebar-statusline");
+    let producer = dir.join(simplebar_statusline::paths::producer_file_name(
+        simplebar_statusline::paths::Platform::current(),
+    ));
     if !producer.exists() {
         return Err(format!(
             "producer not found at {} — run `make build` first",

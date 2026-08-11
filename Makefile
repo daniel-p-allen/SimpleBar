@@ -15,11 +15,43 @@
 
 TESTS := tests
 
-# Where `tauri build` drops the unsigned bundle. Kept in one place because both
-# `build` (asserts it appeared) and `run` (opens it) name it.
-# Universal builds land under their target triple, not plain `release/`.
+# Which platform's recipes to use.
+#
+# `OS` is set to `Windows_NT` by Windows itself, and survives into Git Bash and
+# MSYS, which is where `make` actually runs there — Windows has no `make` of its
+# own. One Makefile with two branches rather than a second build script in
+# PowerShell: the branches are three commands' worth of difference, and two
+# scripts would drift the way two copies of the settings-file code would.
+ifeq ($(OS),Windows_NT)
+PLATFORM := windows
+else
+PLATFORM := macos
+endif
+
+# Where `tauri build` drops the unsigned bundle, and what to launch from it.
+# Kept in one place because both `build` (asserts it appeared) and `run` (opens
+# it) name it.
+#
+# macOS: universal builds land under their target triple, not plain `release/`,
+# and the thing to open is the `.app` directory. Windows: a plain `release/`,
+# and the thing to open is the loose `.exe` — the NSIS installer beside it is
+# for shipping, not for a developer checking a change.
+ifeq ($(PLATFORM),windows)
+APP := src-tauri/target/release/SimpleBar.exe
+INSTALLER_DIR := src-tauri/target/release/bundle/nsis
+else
 APP := src-tauri/target/universal-apple-darwin/release/bundle/macos/SimpleBar.app
 DMG_DIR := src-tauri/target/universal-apple-darwin/release/bundle/dmg
+endif
+
+# The producer's filename, which carries an extension on Windows — matching
+# `producer_file_name` in statusline/src/paths.rs and the resource path in
+# tauri.windows.conf.json. All three have to agree or the bundle build fails.
+ifeq ($(PLATFORM),windows)
+EXE := .exe
+else
+EXE :=
+endif
 
 .PHONY: help test test-producer test-app check clean dev-stop build producer run install-statusline
 
@@ -38,9 +70,19 @@ help:
 # is an unsigned local build by decision — no Apple Developer account, so no
 # signing or notarization flags. `npm install` runs first because `tauri build`
 # needs the CLI, and a fresh clone will not have it yet.
+#
+# The Windows half differs only in the target: no universal binary exists there,
+# so `tauri build` builds for the host, which is x64 by decision — see "x64
+# only" in DESIGN.md. It produces an NSIS installer rather than a DMG, pinned to
+# NSIS alone in tauri.windows.conf.json so a build does not also emit an MSI
+# nobody asked for.
 build: producer
 	npm install
+ifeq ($(PLATFORM),windows)
+	npx tauri build
+else
 	npx tauri build --target universal-apple-darwin
+endif
 
 # The producer, in release, as a universal binary.
 #
@@ -58,6 +100,14 @@ build: producer
 # The installer is merged too, and both land in `target/release/` rather than a
 # per-architecture directory: `simplebar-install` finds the producer as its own
 # sibling, so the two must sit together, and `tauri.conf.json` names that path.
+#
+# On Windows there is nothing to merge — one architecture, so an ordinary
+# release build lands both binaries in `target/release/` directly, which is the
+# same place tauri.windows.conf.json looks for them.
+ifeq ($(PLATFORM),windows)
+producer:
+	cargo build --release --manifest-path statusline/Cargo.toml
+else
 producer:
 	rustup target add x86_64-apple-darwin aarch64-apple-darwin
 	cargo build --release --manifest-path statusline/Cargo.toml --target x86_64-apple-darwin
@@ -69,21 +119,33 @@ producer:
 	lipo -create -output statusline/target/release/simplebar-install \
 		statusline/target/x86_64-apple-darwin/release/simplebar-install \
 		statusline/target/aarch64-apple-darwin/release/simplebar-install
+endif
 
 # Open the built app, building first only if the bundle is absent — so a plain
 # `make run` after a build is instant, but a fresh clone still just works. A
 # shell test rather than a prerequisite because `build` is phony and would
 # otherwise force a rebuild on every run.
+#
+# `-d` on macOS because the bundle is a directory; `-f` on Windows because it is
+# one file. Launched with `start` through `cmd` so the shell is handed back
+# immediately, as `open` does — running the `.exe` directly would block the
+# terminal until the window is closed.
+ifeq ($(PLATFORM),windows)
+run:
+	@test -f "$(APP)" || $(MAKE) build
+	cmd //c start "" "$(subst /,\,$(APP))"
+else
 run:
 	@test -d "$(APP)" || $(MAKE) build
 	open "$(APP)"
+endif
 
 # Wire the producer into ~/.claude/settings.json. The installer is a sibling
 # binary built alongside the producer, so it needs the release build first;
 # building only the statusline crate rather than the whole app keeps it quick
 # when the user only wants the status line, not the window.
 install-statusline: producer
-	./statusline/target/release/simplebar-install
+	./statusline/target/release/simplebar-install$(EXE)
 
 # The producer runs inside Claude Code's status line, in the critical path of
 # every prompt render. These tests exist to prove it stays quiet and exits 0 on
@@ -123,8 +185,18 @@ check:
 # `npx tauri dev` runs four processes deep, so stopping it by hand reliably
 # leaves orphans behind — quiet ones, which then confuse the next check into
 # reporting instances that aren't running.
+#
+# macOS only: the script drives `pkill` and `lsof` against a process tree that
+# looks nothing like the Windows one, and a Git Bash `pkill` cannot see native
+# Windows processes anyway. Rather than a broken port, it says what to run —
+# `taskkill` does the same job in one line there.
+ifeq ($(PLATFORM),windows)
+dev-stop:
+	@echo "dev-stop is macOS only. On Windows: taskkill /F /IM SimpleBar.exe /T"
+else
 dev-stop:
 	@./scripts/dev-stop.sh
+endif
 
 clean:
 	rm -rf __pycache__ $(TESTS)/__pycache__ target src-tauri/target dist

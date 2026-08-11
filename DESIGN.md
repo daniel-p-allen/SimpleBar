@@ -704,6 +704,26 @@ visible to whoever reads this next.
   target-scoped feature reads as absent and fails the build on every platform.
   The feature compiles to nothing on Windows, so leaving it on costs nothing.
 
+  **One Makefile, two branches, and Git Bash on Windows.** `make` remains the
+  single entry point on both platforms. Windows ships no `make`, so building
+  there means Git Bash or MSYS — which is also where `OS=Windows_NT` survives
+  into the environment, and that is what the Makefile branches on. The
+  alternative was a PowerShell build script beside the Makefile, rejected for
+  the same reason a second repository was: the two differ by about three
+  commands — `lipo` and the universal target on one side, a plain host build on
+  the other — and two scripts would drift while one file with two branches
+  cannot. `make dev-stop` is the exception and stays macOS-only, since it drives
+  `pkill` and `lsof` against a process tree Windows does not have; on Windows it
+  prints the `taskkill` line that does the same job.
+
+  **CI builds the Windows artefact; the PC only tests it.** A `windows-latest`
+  job compiles the producer, the app and the NSIS installer, runs both test
+  suites, and uploads the installer. Building on the PC was considered and
+  rejected: it would mean a second toolchain to keep current, and the thing that
+  actually needs testing on Windows is the artefact people will download, not a
+  local build of it. The job is also the only place the app is compiled for
+  Windows at all, for the `llvm-rc` reason below.
+
   **Cross-checking from macOS reaches the producer only.** `cargo check --target
   x86_64-pc-windows-msvc` compiles the `statusline` crate cleanly, so producer
   breakage on Windows is catchable without CI. The app crate gets as far as its

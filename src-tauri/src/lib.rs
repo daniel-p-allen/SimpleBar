@@ -528,7 +528,7 @@ fn read_statusline_state() -> StatuslineState {
 fn connect_statusline(app: AppHandle) -> Result<StatuslineState, String> {
     let bundled = app
         .path()
-        .resolve("simplebar-statusline", tauri::path::BaseDirectory::Resource)
+        .resolve(producer_file_name(), tauri::path::BaseDirectory::Resource)
         .map_err(|e| format!("cannot locate the bundled producer: {e}"))?;
     if !bundled.exists() {
         // The ordinary cause is running from `tauri dev`, where there is no
