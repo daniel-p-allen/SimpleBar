@@ -731,12 +731,32 @@ visible to whoever reads this next.
   resource compiler that a stock macOS toolchain does not have. Windows
   verification of the app is CI's job.
 
-  **Unverified until checked on the machine.** Claude Code is expected to read
-  `%USERPROFILE%\.claude\settings.json` on Windows and to execute a `statusLine`
-  command given as an absolute `.exe` path. Both are assumptions carried over
-  from the macOS behaviour and neither has been confirmed on Windows. They are
-  the first thing to test, because every install-path decision above depends on
-  them.
+  **Verified on the machine, 2026-08-11.** Both assumptions hold. Claude Code
+  does read `%USERPROFILE%\.claude\settings.json` — confirmed by inspecting the
+  live file under a real session, not a fresh one. The Connect button wrote a
+  `statusLine.command` of `...\AppData\Local\SimpleBar\bin\simplebar-statusline.exe`,
+  and Claude Code does execute it: piping a stdin blob containing
+  `rate_limits.five_hour.used_percentage` and `resets_at` — the shape a real
+  session actually sends — made the producer print the status line and write
+  `%LOCALAPPDATA%\simplebar\usage.json` correctly, and the app's gauge moved
+  from it.
+
+  One dead end worth recording so it isn't repeated: invoking the producer by
+  hand with a made-up stdin blob (no `rate_limits` key) reliably produces
+  *nothing* — exit 0, no stdout, no `usage.json` — across git-bash, PowerShell,
+  `--help`/`--version`, and with the real app running. That looks exactly like
+  a hung or broken binary, but it isn't; it's [`reading_from_blob`](../statusline/src/main.rs)
+  correctly treating an incomplete blob as "nothing usable here," per its own
+  doc comment. Any future check of this producer needs a stdin fixture that
+  includes `rate_limits.five_hour`, not just a plausible-looking blob.
+
+  Also noted in passing: `%LOCALAPPDATA%\SimpleBar` (the installed-producer
+  path) and `%LOCALAPPDATA%\simplebar` (the state-dir default) are the same
+  directory on Windows, which is case-insensitive there. Harmless today since
+  nothing collides, but worth knowing if either path ever grows contents that
+  would clash.
+
+  No environment override was needed for either path.
 
 ## Open, to follow up
 
