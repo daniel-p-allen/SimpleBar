@@ -688,6 +688,29 @@ visible to whoever reads this next.
   locks nobody out; native ARM performance is the only thing given up, and it is
   not worth a second release artefact for a gauge that idles at ~0% CPU.
 
+  **The bundle differs per platform, the Cargo features do not.** Tauri merges
+  `tauri.macos.conf.json` and `tauri.windows.conf.json` over `tauri.conf.json`
+  for the platform being built, and that is where the two genuinely divergent
+  bundle settings live: the resource path for the bundled producer, which
+  carries an `.exe` suffix on Windows and none on macOS, and the Windows bundle
+  target, pinned to NSIS so a build produces one installer rather than both an
+  NSIS and an MSI.
+
+  `macOSPrivateApi` deliberately stays in the shared `tauri.conf.json`, and the
+  matching `macos-private-api` Cargo feature stays in the plain `[dependencies]`
+  table. Splitting them apart looks tidier and does not work: `tauri-build`
+  cross-checks the feature list against the config key by reading `Cargo.toml`
+  directly, and it does not read `[target.'cfg(...)'.dependencies]`, so a
+  target-scoped feature reads as absent and fails the build on every platform.
+  The feature compiles to nothing on Windows, so leaving it on costs nothing.
+
+  **Cross-checking from macOS reaches the producer only.** `cargo check --target
+  x86_64-pc-windows-msvc` compiles the `statusline` crate cleanly, so producer
+  breakage on Windows is catchable without CI. The app crate gets as far as its
+  build script and then stops at `tauri-winres`, which needs the `llvm-rc`
+  resource compiler that a stock macOS toolchain does not have. Windows
+  verification of the app is CI's job.
+
   **Unverified until checked on the machine.** Claude Code is expected to read
   `%USERPROFILE%\.claude\settings.json` on Windows and to execute a `statusLine`
   command given as an absolute `.exe` path. Both are assumptions carried over
