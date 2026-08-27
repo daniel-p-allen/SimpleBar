@@ -213,6 +213,13 @@ first), pointing at your release binary:
 }
 ```
 
+**On Windows, use forward slashes in that path** (`C:/Users/you/...`, not
+`C:\Users\you\...`). Claude Code routes status-line commands through Git Bash
+when it's installed, and Git Bash consumes unquoted backslashes as escape
+characters — the command fails silently and the status line just stays blank,
+with no error anywhere. This isn't SimpleBar-specific; it hits any hand-edited
+`command` path in `settings.json`.
+
 The reading is written to `$XDG_STATE_HOME/simplebar/usage.json` (default
 `~/.local/state/simplebar/`), per the XDG Base Directory Specification.
 
