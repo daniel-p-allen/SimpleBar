@@ -1,12 +1,12 @@
 # SimpleBar
 
 **A usage monitor for Claude Code: see how much of your 5-hour session limit is
-left, at a glance.** A macOS HUD that turns the number Claude Code already
-knows into a circular gauge, draining as you use it.
+left, at a glance.** A desktop HUD, for macOS and Windows 11, that turns the
+number Claude Code already knows into a circular gauge, draining as you use it.
 
 SimpleBar is not a standalone tool — it a partner to Claude Code. Claude Code
 already knows your remaining session limit and can hand it to a status-line
-command; SimpleBar takes that same number and expands it into a macOS HUD, a
+command; SimpleBar takes that same number and expands it into a desktop HUD, a
 circular gauge that drains as you use it and can be pinned above your editor.
 The number is account-wide: it already includes claude.ai and mobile usage, not
 just this machine.
@@ -25,29 +25,36 @@ just this machine.
 > You only wire it once: every local surface shares `~/.claude/settings.json`,
 > so a single click connects every terminal you use.
 
-## ⚠️ macOS will refuse to open this the first time. Sorry.
+## ⚠️ Your OS will refuse to open this the first time. Sorry.
 
 **Expect this, it is not a virus and nothing is broken:**
 
 > **macOS will block SimpleBar from opening, saying Apple cannot check or
-> verify it for malicious software.**
+> verify it for malicious software. Windows shows SmartScreen's "Windows
+> protected your PC" instead.**
 
-The exact wording varies by macOS version, but it always amounts to the same
-thing: Apple has not vetted this app, so your Mac will not run it until you
-say so.
+The exact wording varies by OS version, but it always amounts to the same
+thing: neither Apple nor Microsoft has vetted this app, so your machine will
+not run it until you say so.
 
-Every Mac app has to be signed and notarized by Apple to open without this, and
-that requires an Apple Developer account at **$99 a year**. This is a free
-hobby project and nobody is paying that fee, so the app ships unsigned and
-macOS treats it with suspicion.
+Signing costs money on both platforms — an Apple Developer account at **$99 a
+year**, a Windows code-signing certificate on top of that. This is a free
+hobby project and nobody is paying either fee, so both builds ship unsigned
+and each OS treats them with suspicion.
 
-**Getting past it, once:**
+**Getting past it, once — macOS:**
 
 1. Try to open SimpleBar. Let it be refused.
 2. Open **System Settings → Privacy & Security**.
 3. Scroll down to the message about SimpleBar being blocked, and click
    **Open Anyway**.
 4. Confirm. Every launch after this is normal.
+
+**Getting past it, once — Windows:**
+
+1. Run the installer. Let SmartScreen block it.
+2. Click **More info**, then **Run anyway**.
+3. Every launch after this is normal.
 
 The source is all here if you would rather read it than trust it — or build it
 yourself, which sidesteps the warning entirely.
@@ -108,6 +115,8 @@ adjustable-translucency menu, dropped by decision.
 Nothing to install alongside it — no Rust, no Node. Those are needed to *build*
 SimpleBar, not to run it; the download carries finished binaries.
 
+**macOS:**
+
 1. Download the `.dmg` from the
    [latest release](https://github.com/daniel-p-allen/SimpleBar/releases/latest).
    One download for every Mac — it is a universal binary, so it runs natively on
@@ -120,31 +129,45 @@ SimpleBar, not to run it; the download carries finished binaries.
 5. Use Claude Code. Each status-line render updates the gauge; the window shows
    "no data yet" until the first one arrives.
 
+**Windows 11:**
+
+1. Download the installer from the
+   [latest release](https://github.com/daniel-p-allen/SimpleBar/releases/latest).
+   x64 only — it runs under emulation on ARM Windows, so there's still one
+   download for everyone.
+2. Run it. **SmartScreen will refuse the first time** — see below.
+3. Same as macOS from here: click **Connect to Claude Code**, then use Claude
+   Code in a native Windows terminal. WSL is not supported — see `DESIGN.md`.
+
 ### The first-launch warning
 
-See [the warning above](#️-macos-will-refuse-to-open-this-the-first-time-sorry) —
-step 3 is where it happens. One trip to System Settings → Privacy & Security,
+See [the warning above](#️-your-os-will-refuse-to-open-this-the-first-time-sorry) —
+the step above is where it happens on each platform. One manual approval,
 then never again.
 
 ## Building it yourself
 
-Not needed to use SimpleBar — this is the developer path.
+Not needed to use SimpleBar — this is the developer path. Supports macOS and
+Windows 11 from the same repository.
 
 Requirements:
 
-- **macOS.** Stage 1 is macOS only.
+- **macOS or Windows 11.**
 - **Rust** — install via [rustup](https://rust-lang.org/tools/install/)
   ([other methods](https://forge.rust-lang.org/infra/other-installation-methods.html#which)).
 - **Node.js** (18 or newer) for the Tauri CLI.
-- **Xcode Command Line Tools** — Tauri builds the window against them. If you
-  don't have them: `xcode-select --install`.
+- **macOS only: Xcode Command Line Tools** — Tauri builds the window against
+  them. If you don't have them: `xcode-select --install`.
+- **Windows only: Git Bash or MSYS**, since Windows ships no `make` and the
+  Makefile is the single entry point on both platforms.
 
 Then:
 
 1. `git clone https://github.com/daniel-p-allen/SimpleBar.git`
 2. `cd SimpleBar`
-3. `make build` — builds the producer, the installer, and an unsigned
-   `SimpleBar.app` (a few minutes the first time).
+3. `make build` — builds the producer, the installer, and an unsigned app
+   bundle (a `.app` on macOS, an NSIS installer on Windows) — a few minutes the
+   first time.
 4. `make install-statusline` — wires the producer into
    `~/.claude/settings.json`, backing the file up first. This points the status
    line at the binary in your checkout, so it is the right choice while working
