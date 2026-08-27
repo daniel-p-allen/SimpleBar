@@ -815,6 +815,12 @@ mod tests {
         // The installed command on Windows ends in `.exe`, and the path uses
         // backslashes. Missing either would leave a correctly wired Windows
         // user staring at a Connect button that never goes away.
+        //
+        // The directory here is deliberately the old `SimpleBar\bin` spelling,
+        // which the installer no longer produces: someone wired before that
+        // change still has it in their settings.json, and must still read as
+        // wired. Recognition is by filename, so the folder is incidental — this
+        // asserts that it stays that way.
         let installed = r"C:\Users\dan\AppData\Local\SimpleBar\bin\simplebar-statusline.exe";
         assert_eq!(statusline_state(Some(installed), None, "0.1.0"), StatuslineState::Wired);
 

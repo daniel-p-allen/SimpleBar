@@ -150,7 +150,7 @@ Per the XDG Base Directory Specification on macOS and Linux, not a dotfolder in
 |---|---|---|
 | The reading | `$XDG_STATE_HOME/simplebar/usage.json`, default `~/.local/state/simplebar/` | `%LOCALAPPDATA%\simplebar\usage.json` |
 | Preferences (mute) | `$XDG_CONFIG_HOME/simplebar/config.json`, default `~/.config/simplebar/` | `%LOCALAPPDATA%\simplebar\config.json` |
-| Installed producer binary | `~/.local/bin/simplebar-statusline` | `%LOCALAPPDATA%\SimpleBar\bin\simplebar-statusline.exe` |
+| Installed producer binary | `~/.local/bin/simplebar-statusline` | `%LOCALAPPDATA%\simplebar\bin\simplebar-statusline.exe` |
 | Setup record | `$XDG_STATE_HOME/simplebar/install.json` | `%LOCALAPPDATA%\simplebar\install.json` |
 | Claude Code settings | `~/.claude/settings.json` | `%USERPROFILE%\.claude\settings.json` |
 
@@ -167,10 +167,13 @@ per-user state and where a user can actually find it. The environment overrides
 are still honoured first on every platform, so anyone who deliberately sets
 `XDG_STATE_HOME` on Windows gets what they asked for.
 
-The producer is installed to `%LOCALAPPDATA%\SimpleBar\bin\` rather than
+The producer is installed to `%LOCALAPPDATA%\simplebar\bin\` rather than
 somewhere on `PATH`, because Windows has no per-user `PATH` directory
 equivalent to `~/.local/bin`. It does not need one: `statusLine` is given an
-absolute path, so `PATH` never enters into it.
+absolute path, so `PATH` never enters into it. It sits under the same folder as
+the state and config files instead of a `SimpleBar\` of its own, because on a
+case-insensitive filesystem that second folder was the same folder — see "The
+two Windows folders are now one" under "Windows support".
 
 #### Overrides
 
@@ -734,8 +737,10 @@ visible to whoever reads this next.
   **Verified on the machine, 2026-08-11.** Both assumptions hold. Claude Code
   does read `%USERPROFILE%\.claude\settings.json` — confirmed by inspecting the
   live file under a real session, not a fresh one. The Connect button wrote a
-  `statusLine.command` of `...\AppData\Local\SimpleBar\bin\simplebar-statusline.exe`,
-  and Claude Code does execute it: piping a stdin blob containing
+  `statusLine.command` of `...\AppData\Local\SimpleBar\bin\simplebar-statusline.exe`
+  — the spelling of that folder has since changed, see below, though it is
+  literally the same folder — and Claude Code does execute it: piping a stdin
+  blob containing
   `rate_limits.five_hour.used_percentage` and `resets_at` — the shape a real
   session actually sends — made the producer print the status line and write
   `%LOCALAPPDATA%\simplebar\usage.json` correctly, and the app's gauge moved
@@ -750,15 +755,47 @@ visible to whoever reads this next.
   doc comment. Any future check of this producer needs a stdin fixture that
   includes `rate_limits.five_hour`, not just a plausible-looking blob.
 
-  Also noted in passing: `%LOCALAPPDATA%\SimpleBar` (the installed-producer
-  path) and `%LOCALAPPDATA%\simplebar` (the state-dir default) are the same
-  directory on Windows, which is case-insensitive there. Harmless today since
-  nothing collides, but worth knowing if either path ever grows contents that
-  would clash.
-
   No environment override was needed for either path.
 
+  **The two Windows folders are now one — fixed 2026-08-11.** Testing turned up
+  `%LOCALAPPDATA%\SimpleBar` (where the producer is installed) sitting beside
+  `%LOCALAPPDATA%\simplebar` (the state and config default). On a
+  case-insensitive filesystem they are not beside each other at all: they are
+  one directory under two spellings, and which casing appeared in Explorer
+  depended on which of the two code paths created it first. Nothing collided,
+  because the contents happened not to share a name, but the arrangement was one
+  added file away from a bug that would have been very hard to read.
+
+  The installed producer now lives at `%LOCALAPPDATA%\simplebar\bin`, under the
+  same `APP_DIR` as everything else, so there is one name and `bin` is plainly
+  inside it. This needs no migration and cannot strand an existing install: the
+  old and new paths resolve to the same directory, which is the very property
+  that made the original arrangement confusing, so a producer installed under
+  the old spelling is found under the new one without moving and a
+  `statusLine.command` already written into `settings.json` keeps working
+  untouched. The Windows table under "File locations" gives the current paths.
+
 ## Open, to follow up
+
+- **A required status check that no longer runs — found 2026-08-12.** `main`'s
+  branch protection requires three contexts: `producer`, `app`, and
+  `GitGuardian Security Checks`. The first two are this repository's own CI. The
+  third comes from a GitHub App, configured on github.com and mentioned nowhere
+  in the repository — no file naming it has ever been committed, so nothing in a
+  commit can install it, remove it, or make it report. It last ran on PR #14 on
+  5 August 2026 and has not reported since; on PR #15 it is not pending but
+  absent.
+
+  GitHub treats a required context that never arrives as permanently
+  unsatisfied, so this blocks every merge into `main` until it is resolved.
+  Three ways out, and they are not equivalent: reinstate the App so the check
+  runs again; drop the context from the required list, which is the honest
+  answer if the App is not coming back, since a required check that never runs
+  is a gate in name only; or merge with administrator privileges, which is a
+  bypass rather than a fix and should not become the habit that hides this.
+  `scripts/check-secrets.sh` still runs in CI and on every push, so the
+  repository is not unscanned in the meantime — but it is a different gate from
+  the one the policy names, and the policy should say what is actually true.
 
 - **Lighter ticks in light mode — done by preference, 2026-08-04.** Dan
   disliked the near-black (`#2b2b2b`) ticks, so light-mode `--ticks` is now

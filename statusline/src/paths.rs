@@ -125,12 +125,20 @@ pub fn config_dir_from(lookup: &impl Fn(&str) -> Option<String>, platform: Platf
 /// Windows has no per-user directory on `PATH` to match `~/.local/bin`, and
 /// does not need one: the installed producer is named in `settings.json` by
 /// absolute path, so `PATH` never has to find it.
+///
+/// It sits under the same `APP_DIR` as the state and config directories rather
+/// than a folder of its own. This used to be `SimpleBar\bin` beside
+/// `simplebar\`, which on a case-insensitive filesystem is not beside anything
+/// — the two were the same directory under two spellings, so which casing you
+/// saw depended on which code created it first. One name, with `bin` inside it,
+/// removes the question. Nothing moves on disk when this changes, for exactly
+/// the reason it was confusing: the old and new paths are the same path.
 pub fn bin_dir_from(lookup: &impl Fn(&str) -> Option<String>, platform: Platform) -> Option<PathBuf> {
     if let Some(dir) = value(lookup, "SIMPLEBAR_BIN_DIR") {
         return Some(PathBuf::from(dir));
     }
     match platform {
-        Platform::Windows => local_app_data(lookup).map(|d| d.join("SimpleBar").join("bin")),
+        Platform::Windows => local_app_data(lookup).map(|d| d.join(APP_DIR).join("bin")),
         Platform::Unix => home(lookup).map(|h| h.join(".local").join("bin")),
     }
 }
@@ -238,12 +246,29 @@ mod tests {
             config_dir_from(&e, Platform::Windows).unwrap(),
             state_dir_from(&e, Platform::Windows).unwrap()
         );
+        // Under the state folder, not a second folder differing only in case.
         assert_eq!(
             bin_dir_from(&e, Platform::Windows).unwrap(),
             PathBuf::from(r"C:\Users\dan\AppData\Local")
-                .join("SimpleBar")
+                .join("simplebar")
                 .join("bin")
         );
+    }
+
+    /// The Windows locations must differ by more than capitalisation, since the
+    /// filesystem there does not distinguish them. Asserted case-insensitively
+    /// so the failure names the real problem — two directories that are one
+    /// directory — rather than an unequal string.
+    #[test]
+    fn the_windows_bin_directory_is_not_the_state_directory_in_disguise() {
+        let e = env(&[WIN_HOME, WIN_LOCAL]);
+        let state = state_dir_from(&e, Platform::Windows).unwrap();
+        let bin = bin_dir_from(&e, Platform::Windows).unwrap();
+        assert_ne!(
+            state.to_string_lossy().to_lowercase(),
+            bin.to_string_lossy().to_lowercase()
+        );
+        assert!(bin.starts_with(&state));
     }
 
     #[test]
